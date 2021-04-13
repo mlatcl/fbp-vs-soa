@@ -38,7 +38,7 @@ for step in range(n_steps):
     app.add_data(driver_statuses, driver_locations, new_ride_requests, ride_events_per_step.get(step, []), ride_info)
 
 
-    driver_allocations, ride_info, ride_wait_time = app.evaluate(save_dataset=True)
+    driver_allocations, ride_info, ride_wait_time = app.evaluate(save_dataset=False)
 
     # for new rides that were allocated we need to generate events
     if len(ride_info) != 0:
