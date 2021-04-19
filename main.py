@@ -12,10 +12,10 @@ random.seed(42)
 app = fbp_app.App()
 #app = oop_app.App()
 
-n_drivers = 30
-n_steps = 20
-n_requests = 5
-max_wait_steps = 5
+n_drivers = 60
+n_steps = 100
+n_requests = 50
+max_wait_steps = 10
 
 requests = generate_requests(n_requests, n_steps)
 
@@ -38,7 +38,8 @@ for step in range(n_steps):
     app.add_data(driver_statuses, driver_locations, new_ride_requests, ride_events_per_step.get(step, []), ride_info)
 
 
-    driver_allocations, ride_info, ride_wait_time = app.evaluate(save_dataset=False)
+    driver_allocations, ride_info, ride_wait_time, estimated_wait_times = app.evaluate(save_dataset=False)
+    print(estimated_wait_times)
 
     # for new rides that were allocated we need to generate events
     if len(ride_info) != 0:
@@ -48,13 +49,8 @@ for step in range(n_steps):
                 ride_events_per_step[event_step].extend(new_ride_events[event_step])
             else:
                 ride_events_per_step[event_step] = new_ride_events[event_step]
-    print([ri.ride_id for ri in ride_info])
 
     reserved_driver_ids = [da.driver_id for da in driver_allocations]
     for ds in driver_statuses:
         if ds.driver_id in reserved_driver_ids:
             ds.state = DriverState.ASSIGNED
-    print(reserved_driver_ids)
-
-    print(len(ride_wait_time))
-

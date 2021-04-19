@@ -96,3 +96,9 @@ class DriverInformation(Record):
     last_state: DriverState
     last_location: Location
     update_time: datetime
+
+
+@dataclass
+class EstimatedRideWaitInfo(Record):
+    ride_id: int
+    wait_time: float

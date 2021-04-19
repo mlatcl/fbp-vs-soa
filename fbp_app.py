@@ -1,7 +1,9 @@
 from typing import List, Dict, Callable
 from datetime import datetime
-import jsonpickle
-import json
+import pandas as pd
+import os.path
+import pickle
+
 
 from flowpipe import Graph, INode, Node, InputPlug, OutputPlug
 from record_types import *
@@ -139,6 +141,17 @@ class RideWaitTimeStream(Stream):
     def compute(self, ride_wait_times: List) -> Dict:
         self.add_data(ride_wait_times)
         return {'ride_wait_times': self.data}
+
+
+class EstimatedRideWaitTimeStream(Stream):
+    def __init__(self, **kwargs):
+        super(EstimatedRideWaitTimeStream, self).__init__(**kwargs)
+        InputPlug('estimated_ride_wait_time_stream', self)
+        OutputPlug('estimated_ride_wait_time_stream', self)
+
+    def compute(self, estimated_ride_wait_time_stream: List) -> Dict:
+        self.add_data(estimated_ride_wait_time_stream, lambda x: x.ride_id)
+        return {'estimated_ride_wait_time_stream': self.data}
 
 
 ############# processing nodes ################
@@ -285,6 +298,34 @@ class CalculateRideWaitTime(INode):
         return {'ride_wait_time_stream': wait_infos}
 
 
+class EstimateRideWaitTime(INode):
+    def __init__(self, **kwargs):
+        super(EstimateRideWaitTime, self).__init__(**kwargs)
+        InputPlug('driver_info_stream', self)
+        InputPlug('ride_allocation_stream', self)
+        OutputPlug('estimated_ride_wait_time_stream', self)
+
+        if os.path.isfile("fbp_model.obj"):
+            with open("fbp_model.obj", "rb") as f:
+                self.model = pickle.load(f)
+        else:
+            self.model = None
+
+
+    def compute(self, driver_info_stream: List[DriverInformation], ride_allocation_stream: List[RideInformation]) -> Dict:
+        estimates = []
+        for ri in ride_allocation_stream:
+            driver = next(di for di in driver_info_stream if di.driver_id == ri.driver_id)
+            X = [[driver.last_location.lat, driver.last_location.lon, ri.last_location.lat, ri.last_location.lon]]
+            if self.model is not None:
+                model_output = self.model.predict(X)[0]
+            else:
+                model_output = 0.0
+            estimates.append(EstimatedRideWaitInfo(ri.ride_id, model_output))
+
+        return {'estimated_ride_wait_time_stream': estimates}
+
+
 class App():
     def __init__(self):
         self._build()
@@ -302,37 +343,10 @@ class App():
         self.graph.evaluate()
 
         if save_dataset:
-            dataset = {
-                'AllocateRide': {
-                    'inputs': [],
-                    'outputs': []
-                },
-                'CalculateRideWaitTime': {
-                    'inputs': [],
-                    'outputs': []
-                },
-            }
-
-            # store necessary datasets
+            # store necessary data records
             # note that no other code needs to change
             # we just use existing infrastructure to collect all the data
-            nodes_to_collect = dataset.keys()
-            for node in self.graph.all_nodes:
-                if node.name not in nodes_to_collect:
-                    continue
-                
-                for _, input_plug in node.all_inputs().items():
-                    for plug in input_plug.connections:
-                        dataset[node.name]['inputs'].extend(plug.node.get_data())
-                
-                for _, output_plug in node.all_outputs().items():
-                    for plug in output_plug.connections:
-                        dataset[node.name]['outputs'].extend(plug.node.get_data())
-
-            with open("dataset_fbp_app.json", "a") as write_file:
-                dataset_json = jsonpickle.encode(dataset, unpicklable=False, indent=2)
-                write_file.write(dataset_json)
-
+            self._save_dataset()
 
         return self.get_outputs()
 
@@ -340,7 +354,8 @@ class App():
         driver_allocations = self.output_streams['driver_allocation_stream'].get_data(drop=True)
         ride_infos = self.output_streams['updated_ride_info_stream'].get_data(drop=True)
         ride_wait_times = self.output_streams['ride_wait_time_stream'].get_data(drop=True)
-        return driver_allocations, ride_infos, ride_wait_times
+        estimated_ride_wait_times = self.output_streams['estimated_ride_wait_time_stream'].get_data(drop=True)
+        return driver_allocations, ride_infos, ride_wait_times, estimated_ride_wait_times
 
 
     def _build(self) -> Graph:
@@ -368,10 +383,12 @@ class App():
         updated_ride_info_stream = UpdatedRideInformationStream(graph=graph)
         driver_allocation_stream = DriverAllocationStream(graph=graph)
         ride_wait_time_stream = RideWaitTimeStream(graph=graph)
+        estimated_ride_wait_time_stream = EstimatedRideWaitTimeStream(graph=graph)
         self.output_streams = {
             'updated_ride_info_stream': updated_ride_info_stream,
             'driver_allocation_stream': driver_allocation_stream,
-            'ride_wait_time_stream': ride_wait_time_stream
+            'ride_wait_time_stream': ride_wait_time_stream,
+            'estimated_ride_wait_time_stream': estimated_ride_wait_time_stream
         }
 
         # processing nodes
@@ -379,6 +396,7 @@ class App():
         allocate_ride = AllocateRide(graph=graph)
         update_ride_information = UpdateRideInformation(graph=graph)
         calculate_ride_wait_time = CalculateRideWaitTime(graph=graph)
+        estimate_ride_wait_time = EstimateRideWaitTime(graph=graph)
 
         driver_status_stream.outputs['driver_status'] >> join_driver_info.inputs['driver_status_stream']
         driver_location_stream.outputs['driver_location'] >> join_driver_info.inputs['driver_location_stream']
@@ -396,8 +414,95 @@ class App():
         update_ride_information.outputs['ride_info_stream'] >> updated_ride_info_stream.inputs['ride_info']
         calculate_ride_wait_time.outputs['ride_wait_time_stream'] >> ride_wait_time_stream.inputs['ride_wait_times']
 
+        allocate_ride.outputs['ride_allocation_stream'] >> estimate_ride_wait_time.inputs['ride_allocation_stream']
+        driver_info_stream.outputs['driver_info_stream'] >> estimate_ride_wait_time.inputs['driver_info_stream']
+        estimate_ride_wait_time.outputs['estimated_ride_wait_time_stream'] >> estimated_ride_wait_time_stream.inputs['estimated_ride_wait_time_stream']
+
         self.graph = graph
 
+
+    def _save_dataset(self):
+        raw_data = self._collect_raw_data()
+
+        dataset_records = []
+        for output_record in raw_data["AllocateRide"]["outputs"]:
+            if not isinstance(output_record, RideInformation):
+                continue
+
+            ride_id = output_record.ride_id
+            driver_id = output_record.driver_id
+
+            driver_record = None
+            for ir in raw_data["AllocateRide"]["inputs"]:
+                if isinstance(ir, DriverInformation) \
+                   and ir.last_state == DriverState.AVAILABLE and ir.driver_id == driver_id:
+                    driver_record = ir
+
+            if driver_record is not None:
+                dataset_records.append({
+                    "ride_id": ride_id,
+                    "driver_id": driver_id,
+                    "driver_lat": driver_record.last_location.lat,
+                    "driver_lon": driver_record.last_location.lon,
+                    "user_lat": output_record.last_location.lat,
+                    "user_lon": output_record.last_location.lat
+                })
+
+        allocate_ride_df = pd.DataFrame(dataset_records)
+        self._write_data_to_csv("allocate_ride_fbp_app.csv", allocate_ride_df)
+
+        dataset_records = []
+        for record in raw_data["CalculateRideWaitTime"]["outputs"]:
+            dataset_records.append({
+                "ride_id": record.ride_id,
+                "wait_duration": record.wait_duration
+            })
+        wait_time_df = pd.DataFrame(dataset_records)
+        self._write_data_to_csv("wait_time_fbp_app.csv", wait_time_df)
+
+
+    def _collect_raw_data(self):
+        raw_data = {
+            'AllocateRide': {
+                'inputs': [],
+                'outputs': []
+            },
+            'CalculateRideWaitTime': {
+                'inputs': [],
+                'outputs': []
+            },
+        }
+
+        nodes_to_collect = raw_data.keys()
+        for node in self.graph.all_nodes:
+            if node.name not in nodes_to_collect:
+                continue
+            
+            for _, input_plug in node.all_inputs().items():
+                for plug in input_plug.connections:
+                    raw_data[node.name]['inputs'].extend(plug.node.get_data())
+            
+            for _, output_plug in node.all_outputs().items():
+                for plug in output_plug.connections:
+                    raw_data[node.name]['outputs'].extend(plug.node.get_data())
+        
+        return raw_data
+
+    def _write_data_to_csv(self, filename, df):
+        """
+        Writes data from given pandas DataFrame to file
+        Creates new file (with header) if it doesn't exist
+        otherwise appends data to existing file
+
+        Does not do anything if the dataset is empty
+        """
+        if df.empty:
+            return
+
+        if os.path.isfile(filename):
+            df.to_csv(filename, mode="a", index=False, header=False)
+        else:
+            df.to_csv(filename, mode="w", index=False, header=True)
 
 
 if __name__ == "__main__":
