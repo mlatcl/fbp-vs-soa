@@ -1,15 +1,46 @@
 from datetime import datetime
+import sys
 
-import fbp_app
-import oop_app
 from record_types import *
 from generate_data import get_random_location, generate_requests, generate_init_driver_data, generate_ride_events
 
+# importing all app implementations here
+import fbp_app_min
+import fbp_app_data
+import fbp_app_ml
+
+all_apps = {
+    "fbp_app_min": {
+        "description": "FBP app that only provides basic functionality.",
+        "create_app": (lambda: fbp_app_min.App()),
+        "can_collect_data": False,
+        "outputs_estimates": False
+    },
+    "fbp_app_data": {
+        "description": "FBP app that is able to collect data.",
+        "create_app": (lambda: fbp_app_data.App()),
+        "can_collect_data": True,
+        "outputs_estimates": False
+    },
+    "fbp_app_ml": {
+        "description": "FBP app that outputs estimates of riding time with trained ML model.",
+        "create_app": (lambda: fbp_app_ml.App()),
+        "can_collect_data": True,
+        "outputs_estimates": True
+    },
+}
 
 import random
 random.seed(42)
 
-app = fbp_app.App()
+if len(sys.argv) != 2 or sys.argv[1] not in all_apps.keys():
+    print("Usage:")
+    print("    python main.py <app_name>")
+    print("List of available app names: " + " , ".join(all_apps.keys()))
+    exit(1)
+
+app_data = all_apps[sys.argv[1]]
+app = app_data["create_app"]()
 #app = oop_app.App()
 
 n_drivers = 60
@@ -37,9 +68,16 @@ for step in range(n_steps):
         new_ride_requests = [requests[step]]
     app.add_data(driver_statuses, driver_locations, new_ride_requests, ride_events_per_step.get(step, []), ride_info)
 
+    if app_data["can_collect_data"]:
+        output = app.evaluate(save_dataset=False)
+    else:
+        output = app.evaluate()
 
-    driver_allocations, ride_info, ride_wait_time, estimated_wait_times = app.evaluate(save_dataset=False)
-    print(estimated_wait_times)
+    if app_data["outputs_estimates"]:
+        driver_allocations, ride_info, ride_wait_time, estimated_wait_times = output
+        print(estimated_wait_times)
+    else:
+        driver_allocations, ride_info, ride_wait_time = output
 
     # for new rides that were allocated we need to generate events
     if len(ride_info) != 0:
