@@ -8,6 +8,7 @@ from generate_data import get_random_location, generate_requests, generate_init_
 import fbp_app_min
 import fbp_app_data
 import fbp_app_ml
+import soa_app_min
 
 all_apps = {
     "fbp_app_min": {
@@ -27,6 +28,12 @@ all_apps = {
         "create_app": (lambda: fbp_app_ml.App()),
         "can_collect_data": True,
         "outputs_estimates": True
+    },
+    "soa_app_min": {
+        "description": "SOA app that only provides basic functionality.",
+        "create_app": (lambda: soa_app_min.App()),
+        "can_collect_data": False,
+        "outputs_estimates": False
     },
 }
 
