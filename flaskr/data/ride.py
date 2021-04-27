@@ -7,9 +7,10 @@ def insert_ride(ride):
     db = get_db()
     cursor = db.execute(
         'INSERT INTO RideRequest (ride_id, user_id, from_lat, from_lon, to_lat, to_lon, request_time) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(ride_id) DO UPDATE SET user_id = ?, from_lat = ?, from_lon = ?, to_lat = ?, to_lon = ?, request_time = ?',
-        (ride['ride_id'], ride['user_id'], ride['from_lat'], ride['from_lon'], ride['to_lat'], ride['to_lon'],
-         datetime.strptime(ride['request_time'], '%Y-%m-%d %H:%M:%S.%f'), ride['user_id'], ride['from_lat'],
-         ride['from_lon'], ride['to_lat'], ride['to_lon'],
+        (ride['ride_id'], ride['user_id'], ride['from_location']['lat'], ride['from_location']['lon'],
+         ride['to_location']['lat'], ride['to_location']['lon'],
+         datetime.strptime(ride['request_time'], '%Y-%m-%d %H:%M:%S.%f'), ride['user_id'], ride['from_location']['lat'],
+         ride['from_location']['lon'], ride['to_location']['lat'], ride['to_location']['lon'],
          datetime.strptime(ride['request_time'], '%Y-%m-%d %H:%M:%S.%f'))
     )
     db.commit()
@@ -30,9 +31,10 @@ def get_all_rides():
     db = get_db()
     cursor = db.execute('SELECT * FROM RideRequest')
     for ride in cursor:
-        r = {'ride_id': ride['ride_id'], 'user_id': ride['user_id'], 'from_lat': ride['from_lat'],
-             'from_lon': ride['from_lon'], 'to_lat': ride['to_lat'],
-             'to_lon': ride['to_lon'], 'request_time': ride['request_time'].strftime('%Y-%m-%d %H:%M:%S.%f'),
+        from_location = {'lat': ride['from_lat'], 'lon': ride['from_lon']}
+        to_location = {'lat': ride['to_lat'], 'lon': ride['to_lon']}
+        r = {'ride_id': ride['ride_id'], 'user_id': ride['user_id'], 'from_location': from_location,
+             'to_location': to_location, 'request_time': ride['request_time'].strftime('%Y-%m-%d %H:%M:%S.%f'),
              'allocation_time': ride['allocation_time'], 'state': ride['state'], 'event_type': ride['event_type'],
              'event_data': ride['event_data']}
         res.append(r)

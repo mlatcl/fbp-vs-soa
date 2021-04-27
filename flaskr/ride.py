@@ -2,7 +2,7 @@ from flask import (Blueprint, request, make_response, jsonify)
 from .data import ride
 
 
-bp = Blueprint('ride', __name__, url_prefix='/ride')
+bp = Blueprint('ride', __name__, url_prefix='/ride-request')
 
 
 # New ride API

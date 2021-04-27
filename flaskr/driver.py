@@ -1,8 +1,9 @@
 from flask import (Blueprint, request, make_response, jsonify)
 from .data import driver
+import json
 
 
-bp = Blueprint('driver', __name__, url_prefix='/driver')
+bp = Blueprint('driver', __name__, url_prefix='/driver-request')
 
 
 @bp.route('/new_driver', methods=('GET', 'POST'))
@@ -50,9 +51,22 @@ def new_driver():
     return res
 
 
-# Add a list of drivers API
-@bp.route('/add_all_drivers', methods=('GET', 'POST'))
-def add_all_drivers():
+# Add a list of drivers statuses API
+@bp.route('/add_all_drivers_statuses', methods=('GET', 'POST'))
+def add_all_drivers_statuses():
+    res = {}
+    req = request.get_json()
+    print('Request print = ' + str(req))
+    drivers = driver.insert_drivers(req)
+    print('Drivers affected = ' + str(drivers))
+    res['msg'] = 'Drivers affected = ' + str(drivers)
+    res = make_response(jsonify(res), 200)
+    return res
+
+
+# Add a list of drivers locations API
+@bp.route('/add_all_drivers_locations', methods=('GET', 'POST'))
+def add_all_drivers_locations():
     print('Request before print = ' + str(request))
     res = {}
     req = request.get_json()

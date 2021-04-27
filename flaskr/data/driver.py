@@ -1,11 +1,11 @@
-# Drivers informationflaskr
+# Drivers information
 
 drivers = {}
 
 
 # Add a new driver
 def insert_driver(driver):
-    driver_id = driver['driver_id']
+    driver_id = int(driver['driver_id'])
     drivers[driver_id] = driver
     return driver_id
 
@@ -13,12 +13,12 @@ def insert_driver(driver):
 # Insert/Update a dict of drivers
 def insert_drivers(ds):
     affected = 0
-    for driver_id, driver in ds.items():
-        if driver_id not in drivers:
+    for driver in ds:
+        if int(driver['driver_id']) not in drivers:
             insert_driver(driver)
             affected = affected + 1
         else:
-            update_driver(driver_id, driver)
+            update_driver(int(driver['driver_id']), driver)
             affected = affected + 1
     return affected
 

@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from dataclasses_json import dataclass_json
 from datetime import datetime
 from enum import Enum
 from typing import Dict
@@ -21,6 +22,7 @@ class Location(Record):
     lon: float
 
 
+@dataclass_json
 @dataclass
 class RideRequest(Record):
     ride_id: int
@@ -75,14 +77,14 @@ class DriverState(Enum):
     ASSIGNED = "ASSIGNED"
     OFFLINE = "OFFLINE"
 
-
+@dataclass_json
 @dataclass
 class DriverStatus(Record):
     driver_id: int
     update_time: datetime
     state: DriverState
 
-
+@dataclass_json
 @dataclass
 class DriverLocation(Record):
     driver_id: int
