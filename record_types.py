@@ -16,6 +16,7 @@ class Record:
         return id(self)
 
 
+@dataclass_json
 @dataclass
 class Location(Record):
     lat: float
@@ -39,6 +40,7 @@ class RideEventType(Enum):
     LOCATION = "LOCATION"
 
 
+@dataclass_json
 @dataclass
 class RideEvent(Record):
     ride_id: int
@@ -48,12 +50,14 @@ class RideEvent(Record):
 
 
 class RideStatus(Enum):
+    UNASSIGNED = "UNASSIGNED"
     DRIVER_ASSIGNED = "DRIVER_ASSIGNED"
     ENROUTE = "ENROUTE"
     COMPLETED = "COMPLETED"
     CANCELLED = "CANCELLED"
 
 
+@dataclass_json
 @dataclass
 class RideInformation(Record):
     ride_id: int
@@ -64,6 +68,7 @@ class RideInformation(Record):
     last_location: Location
 
 
+@dataclass_json
 @dataclass
 class RideWaitInfo(Record):
     ride_id: int
@@ -76,6 +81,7 @@ class DriverState(Enum):
     AVAILABLE = "AVAILABLE"
     ASSIGNED = "ASSIGNED"
     OFFLINE = "OFFLINE"
+
 
 @dataclass_json
 @dataclass
