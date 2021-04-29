@@ -1,14 +1,16 @@
-from datetime import datetime
 import sys
 
 from record_types import *
-from generate_data import get_random_location, generate_requests, generate_init_driver_data, generate_ride_events
+from generate_data import generate_requests, generate_init_driver_data, generate_ride_events
 
 # importing all app implementations here
 import fbp_app_min
 import fbp_app_data
 import fbp_app_ml
 import soa_app_min
+import soa_app_data
+import soa_app_ml
+
 
 all_apps = {
     "fbp_app_min": {
@@ -34,6 +36,18 @@ all_apps = {
         "create_app": (lambda: soa_app_min.App()),
         "can_collect_data": False,
         "outputs_estimates": False
+    },
+    "soa_app_data": {
+        "description": "SOA app that is able to collect data.",
+        "create_app": (lambda: soa_app_data.App()),
+        "can_collect_data": True,
+        "outputs_estimates": False
+    },
+    "soa_app_ml": {
+        "description": "SOA app that outputs estimates of riding time with trained ML model.",
+        "create_app": (lambda: soa_app_ml.App()),
+        "can_collect_data": True,
+        "outputs_estimates": True
     },
 }
 

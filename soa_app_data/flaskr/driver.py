@@ -1,7 +1,5 @@
 from flask import (Blueprint, request, make_response, jsonify)
 from .data import driver
-import json
-
 
 bp = Blueprint('driver', __name__, url_prefix='/driver-request')
 
