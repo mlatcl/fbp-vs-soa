@@ -14,6 +14,7 @@ CREATE TABLE RideRequest(
   allocation_time TIMESTAMP,
   update_time TIMESTAMP,
   state TEXT NOT NULL,
-  event_type TEXT
+  event_type TEXT,
+  evaluated TEXT
 );
 

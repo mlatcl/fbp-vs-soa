@@ -11,9 +11,7 @@ bp = Blueprint('driver', __name__, url_prefix='/driver-request')
 def add_all_drivers_statuses():
     res = {}
     req = request.get_json()
-    print('Request print = ' + str(req))
     drivers = driver.insert_drivers(req)
-    print('Drivers affected = ' + str(drivers))
     res['msg'] = 'Drivers affected = ' + str(drivers)
     res = make_response(jsonify(res), 200)
     return res
@@ -22,23 +20,29 @@ def add_all_drivers_statuses():
 # Add a list of drivers locations API
 @bp.route('/add_all_drivers_locations', methods=('GET', 'POST'))
 def add_all_drivers_locations():
-    print('Request before print = ' + str(request))
     res = {}
     req = request.get_json()
-    print('Request print = ' + str(req))
     drivers = driver.insert_drivers(req)
-    print('Drivers affected = ' + str(drivers))
     res['msg'] = 'Drivers affected = ' + str(drivers)
     res = make_response(jsonify(res), 200)
     return res
 
 
-# Allocate drivers to rides API
-@bp.route('/allocate_drivers', methods=('GET', 'POST'))
-def allocate_drivers():
-    res = {}
-    allocation = driver.allocate_drivers()
-    res = make_response(jsonify(allocation), 200)
+# Allocate driver to ride API
+@bp.route('/allocate_driver', methods=('GET', 'POST'))
+def allocate_driver():
+    req = request.get_json()
+    res = driver.allocate_driver()
+    res = make_response(jsonify(res), 200)
+    return res
+
+
+# Release driver
+@bp.route('/release_driver', methods=('GET', 'POST'))
+def release_driver():
+    req = request.get_json()
+    res = driver.release_driver(req["driver_id"])
+    res = make_response(jsonify(res), 200)
     return res
 
 

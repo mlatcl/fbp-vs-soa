@@ -1,5 +1,5 @@
 from .db import get_db
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 # Insert a new ride request in the database
@@ -45,7 +45,7 @@ def get_all_rides():
              'request_time': ride['request_time'].strftime('%Y-%m-%d %H:%M:%S.%f'),
              'allocation_time': ride['allocation_time'].strftime('%Y-%m-%d %H:%M:%S.%f'),
              'update_time': ride['update_time'].strftime('%Y-%m-%d %H:%M:%S.%f'),
-             'state': ride['state'], 'event_type': ride['event_type']}
+             'state': ride['state'], 'event_type': ride['event_type'], 'evaluated':ride['evaluated']}
         res.append(r)
     return res
 
@@ -82,8 +82,6 @@ def update_ride(ride_id, info):
     sql = sql[:-1]
     sql = 'UPDATE RideRequest SET' + sql + ' WHERE ride_id = ?'
     values.append(ride_id)
-    print(sql)
-    print(values)
     cursor = db.execute(sql, values)
     db.commit()
     if cursor.rowcount > 0:
@@ -101,7 +99,6 @@ def update_rides_events(ride_events):
                 'state': ride_event['ride_status'], 'event_type': ride_event['event_type'],
                 'last_lat': ride_event['event_data']['location']['lat'],
                 'last_lon': ride_event['event_data']['location']['lon']}
-        print(str(info))
         res = update_ride(ride_id, info)
         if res is not None:
             affected = affected + 1
@@ -120,3 +117,52 @@ def update_rides_infos(ride_infos):
         if res is not None:
             affected = affected + 1
     return affected
+
+
+def update_ride_allocation(ride_allocation):
+    affected = 0
+    ride_id = ride_allocation['ride_id']
+    info = {'driver_id': ride_allocation['driver_id'], 'allocation_time': datetime.now(), 'update_time': datetime.now(),
+            'state': ride_allocation['state']}
+    res = update_ride(ride_id, info)
+    if res is not None:
+        affected = affected + 1
+    return affected
+
+
+# Get ride infos
+def get_ride_infos():
+    ride_infos = []
+    assigned = get_rides_by_state('DRIVER_ASSIGNED')
+    enroute = get_rides_by_state('ENROUTE')
+    for ride in assigned:
+        ride_info = {'ride_id': ride['ride_id'], 'user_id': ride['user_id'], 'driver_id': ride['driver_id'],
+                     'state': ride['state'], 'update_time': ride['update_time'],
+                     'last_location': ride['last_location']}
+        ride_infos.append(ride_info)
+    for ride in enroute:
+        ride_info = {'ride_id': ride['ride_id'], 'user_id': ride['user_id'], 'driver_id': ride['driver_id'],
+                     'state': ride['state'], 'update_time': ride['update_time'],
+                     'last_location': ride['last_location']}
+        ride_infos.append(ride_info)
+    return ride_infos
+
+
+# Get ride wait times
+def get_ride_wait_times():
+    ride_wait_times = []
+    db = get_db()
+    sql = 'SELECT * FROM RideRequest WHERE state = ? AND evaluated is NULL'
+    values = ['ENROUTE']
+    cursor = db.execute(sql, values)
+    for ride in cursor:
+        wait_duration = ride['allocation_time'] - ride['request_time']
+        wait_duration = wait_duration / timedelta(milliseconds=1)
+        last_location = {'lat': ride['last_lat'], 'lon': ride['last_lon']}
+        ride_wait_time = {'ride_id': ride['ride_id'],
+                          'request_time': ride['request_time'].strftime('%Y-%m-%d %H:%M:%S.%f'),
+                          'wait_duration': wait_duration, 'location': last_location}
+        ride_wait_times.append(ride_wait_time)
+        info = {'evaluated': 'done'}
+        update_ride(ride['ride_id'], info)
+    return ride_wait_times
