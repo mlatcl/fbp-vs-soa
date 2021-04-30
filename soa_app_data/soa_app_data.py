@@ -3,6 +3,8 @@ from record_types import RideStatus, DriverStatus, DriverState, Location, RideIn
 from datetime import datetime, timedelta
 import json
 
+from record_types import *
+
 base_url = 'http://127.0.0.1:5000/'
 
 
@@ -90,8 +92,8 @@ class App():
         driver_allocations = self.allocate_drivers()
         ride_infos = self.get_ride_infos()
         ride_wait_times = self.get_ride_wait_times()
-        #if save_dataset:
-            #self.save_dataset()
+        if save_dataset:
+            self.save_dataset(ride_infos, ride_wait_times)
         return self.get_outputs(driver_allocations, ride_infos, ride_wait_times)
 
     # Client to allocate drivers
@@ -132,6 +134,48 @@ class App():
         response = requests.post(url, json={})
         # print(response.json())
         return response.json()
+
+    # Save dataset function
+    def save_dataset(self, ride_infos, ride_wait_times):
+        if ride_infos != {}:
+            ride_data_to_save = self._get_ride_data_to_save(ride_infos)
+            dataset_records = []
+            for ride_data in ride_data_to_save:
+                driver_data_to_save = self._get_driver_data_to_save(ride_data['driver_id'])
+                for key, value in driver_data_to_save.items():
+                    ride_data[key] = value
+                dataset_records.append(ride_data)
+            self._save_data_to_file(dataset_records, 'allocate_ride_soa_app.csv')
+        if ride_wait_times != {}:
+            wait_times_data_to_save = self._get_wait_times_data_to_save(ride_wait_times)
+            self._save_data_to_file(wait_times_data_to_save, 'wait_time_soa_app.csv')
+
+    # Client to get ride data to save
+    def _get_ride_data_to_save(self, ride_infos):
+        url = base_url + 'data-request/get_ride_data_to_save'
+        response = requests.post(url, json=ride_infos)
+        ride_data = response.json()
+        return ride_data
+
+    # Client to get driver data to save
+    def _get_driver_data_to_save(self, driver_id):
+        url = base_url + 'driver-request/get_driver_data_to_save'
+        response = requests.post(url, json={'driver_id': driver_id})
+        driver_data = response.json()
+        return driver_data
+
+    # Client to get wait times data to save
+    def _get_wait_times_data_to_save(self, ride_wait_times):
+        url = base_url + 'data-request/get_wait_times_data_to_save'
+        response = requests.post(url, json=ride_wait_times)
+        wait_times_data = response.json()
+        return wait_times_data
+
+    # Client to save data
+    def _save_data_to_file(self, info, file_name):
+        url = base_url + 'data-request/save_data_to_file'
+        content = {'info': info, 'file_name': file_name}
+        requests.post(url, json=content)
 
     # Parsing data for main programm
     def get_outputs(self, das, ris, rwts):

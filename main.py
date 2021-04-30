@@ -7,9 +7,9 @@ from generate_data import generate_requests, generate_init_driver_data, generate
 import fbp_app_min
 import fbp_app_data
 import fbp_app_ml
-import soa_app_min
-import soa_app_data
-import soa_app_ml
+from soa_app_min import soa_app_min
+from soa_app_data import soa_app_data
+from soa_app_ml import soa_app_ml
 
 
 all_apps = {
@@ -90,7 +90,7 @@ for step in range(n_steps):
     app.add_data(driver_statuses, driver_locations, new_ride_requests, ride_events_per_step.get(step, []), ride_info)
 
     if app_data["can_collect_data"]:
-        output = app.evaluate(save_dataset=False)
+        output = app.evaluate(save_dataset=True)
     else:
         output = app.evaluate()
 
