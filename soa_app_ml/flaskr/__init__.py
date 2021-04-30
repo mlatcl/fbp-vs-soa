@@ -38,4 +38,7 @@ def create_app(test_config=None):
     from . import driver
     app.register_blueprint(driver.bp)
 
+    from . import data_manager
+    app.register_blueprint(data_manager.bp)
+
     return app

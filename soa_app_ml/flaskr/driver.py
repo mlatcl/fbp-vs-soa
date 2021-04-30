@@ -50,3 +50,12 @@ def get_all_drivers():
     res = driver.get_all_drivers()
     res = make_response(jsonify(res), 200)
     return res
+
+
+# Get driver data to save API
+@bp.route('/get_driver_data_to_save', methods=('GET', 'POST'))
+def get_driver_data_to_save():
+    req = request.get_json()
+    res = driver.get_driver_data_to_save(req['driver_id'])
+    res = make_response(jsonify(res), 200)
+    return res

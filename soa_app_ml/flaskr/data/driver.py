@@ -1,8 +1,6 @@
 # Drivers information
 from datetime import datetime, timedelta
 
-from .ride import get_rides_by_state, update_ride
-
 drivers = {}
 
 
@@ -67,3 +65,13 @@ def release_driver(driver_id):
     driver['state'] = 'AVAILABLE'
     driver['update_time'] = str(datetime.now())
     drivers[driver_id] = driver
+
+
+# Get driver data to save
+def get_driver_data_to_save(driver_id):
+    res = {}
+    driver = drivers[driver_id]
+    res['driver_id'] = driver_id
+    res['driver_lat'] = driver['location']['lat']
+    res['driver_lon'] = driver['location']['lon']
+    return res
