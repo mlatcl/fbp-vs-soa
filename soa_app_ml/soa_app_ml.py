@@ -94,7 +94,8 @@ class App():
         ride_wait_times = self._get_ride_wait_times()
         if save_dataset:
             self._save_dataset(ride_infos, ride_wait_times)
-        estimated_ride_wait_times = self._get_estimated_ride_wait_times()
+        self._train_model()
+        estimated_ride_wait_times = self._get_estimated_times(ride_infos)
         return self.get_outputs(driver_allocations, ride_infos, ride_wait_times, estimated_ride_wait_times)
 
     # Allocate drivers
@@ -196,15 +197,26 @@ class App():
         content = {'info': info, 'file_name': file_name}
         requests.post(url, json=content)
 
-    # Client to get estimated wait times
-    def _get_estimated_ride_wait_times(self):
-        url = base_url + 'learning-request/get_estimated_ride_wait_times'
+    # Client to train the model
+    def _train_model(self):
+        url = base_url + 'learning-request/train_model'
         response = requests.post(url, json={})
         # print(response.json())
         return response.json()
 
+    # Client to get estimated wait times
+    def _get_estimated_times(self, ride_infos):
+        for ri in ride_infos:
+            url = base_url + 'driver-request/get_driver_by_id'
+            driver_info = requests.post(url, json={'driver_id': ri['driver_id']})
+            ri['driver_info'] = driver_info.json()
+        url = base_url + 'learning-request/get_estimated_times'
+        response =  requests.post(url, json=ride_infos)
+        # print(response.json())
+        return response.json()
+
     # Parsing data for main programm
-    def get_outputs(self, das, ris, rwts):
+    def get_outputs(self, das, ris, rwts, erwts):
         driver_allocations = []
         for da in das:
             da['state'] = DriverState(da['state'])
@@ -226,7 +238,11 @@ class App():
             rwt['location'] = Location.from_dict(rwt['location'])
             ride_wait_time = RideWaitInfo.from_dict(rwt)
             ride_wait_times.append(ride_wait_time)
-        return driver_allocations, ride_infos, ride_wait_times
+        estimated_ride_wait_times = []
+        for erwt in erwts:
+            estimated_ride_wait_time = EstimatedRideWaitInfo.from_dict(erwt)
+            estimated_ride_wait_times.append(estimated_ride_wait_time)
+        return driver_allocations, ride_infos, ride_wait_times, estimated_ride_wait_times
 
 
 if __name__ == "__main__":

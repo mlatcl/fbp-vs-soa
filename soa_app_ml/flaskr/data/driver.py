@@ -52,3 +52,11 @@ def get_driver_data_to_save(driver_id):
     res['driver_lat'] = driver['location']['lat']
     res['driver_lon'] = driver['location']['lon']
     return res
+
+
+# Get driver by id
+def get_driver_by_id(driver_id):
+    if driver_id in drivers:
+        return drivers[driver_id]
+    else:
+        return None

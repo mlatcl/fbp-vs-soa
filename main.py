@@ -90,7 +90,7 @@ for step in range(n_steps):
     app.add_data(driver_statuses, driver_locations, new_ride_requests, ride_events_per_step.get(step, []), ride_info)
 
     if app_data["can_collect_data"]:
-        output = app.evaluate(save_dataset=True)
+        output = app.evaluate(save_dataset=False)
     else:
         output = app.evaluate()
 

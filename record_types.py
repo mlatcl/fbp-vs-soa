@@ -106,6 +106,7 @@ class DriverInformation(Record):
     update_time: datetime
 
 
+@dataclass_json
 @dataclass
 class EstimatedRideWaitInfo(Record):
     ride_id: int

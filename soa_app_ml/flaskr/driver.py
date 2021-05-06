@@ -1,5 +1,6 @@
 from flask import (Blueprint, request, make_response, jsonify)
 from .data import driver
+from datetime import datetime, timedelta
 
 bp = Blueprint('driver', __name__, url_prefix='/driver-request')
 
@@ -9,8 +10,14 @@ bp = Blueprint('driver', __name__, url_prefix='/driver-request')
 def add_all_drivers_statuses():
     res = {}
     req = request.get_json()
-    drivers = driver.insert_drivers(req)
-    res['msg'] = 'Drivers affected = ' + str(drivers)
+    affected = 0
+    for d in req:
+        if driver.insert_driver(d):
+            affected = affected + 1
+        else:
+            driver.update_driver(int(d['driver_id']), d)
+            affected = affected + 1
+    res['msg'] = 'Drivers affected = ' + str(affected)
     res = make_response(jsonify(res), 200)
     return res
 
@@ -20,8 +27,14 @@ def add_all_drivers_statuses():
 def add_all_drivers_locations():
     res = {}
     req = request.get_json()
-    drivers = driver.insert_drivers(req)
-    res['msg'] = 'Drivers affected = ' + str(drivers)
+    affected = 0
+    for d in req:
+        if driver.insert_driver(d):
+            affected = affected + 1
+        else:
+            driver.update_driver(int(d['driver_id']), d)
+            affected = affected + 1
+    res['msg'] = 'Drivers affected = ' + str(affected)
     res = make_response(jsonify(res), 200)
     return res
 
@@ -30,7 +43,15 @@ def add_all_drivers_locations():
 @bp.route('/allocate_driver', methods=('GET', 'POST'))
 def allocate_driver():
     req = request.get_json()
-    res = driver.allocate_driver()
+    res = None
+    available_driver = driver.get_available_driver()
+    if available_driver is not None:
+        available_driver['state'] = 'ASSIGNED'
+        available_driver['update_time'] = str(datetime.now())
+        driver.update_driver(available_driver['driver_id'], available_driver)
+        driver_status = {'driver_id': available_driver['driver_id'],
+                         'update_time': available_driver['update_time'], 'state': available_driver['state']}
+        res = driver_status
     res = make_response(jsonify(res), 200)
     return res
 
@@ -57,5 +78,14 @@ def get_all_drivers():
 def get_driver_data_to_save():
     req = request.get_json()
     res = driver.get_driver_data_to_save(req['driver_id'])
+    res = make_response(jsonify(res), 200)
+    return res
+
+
+# Get driver by id API
+@bp.route('/get_driver_by_id', methods=('GET', 'POST'))
+def get_driver_by_id():
+    req = request.get_json()
+    res = driver.get_driver_by_id(req['driver_id'])
     res = make_response(jsonify(res), 200)
     return res

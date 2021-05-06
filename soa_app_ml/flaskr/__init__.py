@@ -41,4 +41,7 @@ def create_app(test_config=None):
     from . import data_manager
     app.register_blueprint(data_manager.bp)
 
+    from . import learning
+    app.register_blueprint(learning.bp)
+
     return app
