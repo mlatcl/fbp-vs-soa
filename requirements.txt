@@ -4,7 +4,12 @@ flowpipe>=0.9.0
 jsonpickle>=2.0.0
 pandas>=1.1.5
 scikit-learn>=0.24.1
-radon>=4.5.0 # not required to run the code, used to collect metrics on code only
+
+# metrics
+radon>=4.5.0
+flake8>=3.9.1
+flake8-cognitive-complexity>=0.1.0
+cognitive-complexity>=1.2.0
 
 # Flask Framework
 click==7.1.2
