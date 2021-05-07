@@ -94,7 +94,6 @@ class App():
         ride_wait_times = self._get_ride_wait_times()
         if save_dataset:
             self._save_dataset(ride_infos, ride_wait_times)
-        self._train_model()
         estimated_ride_wait_times = self._get_estimated_times(ride_infos)
         return self.get_outputs(driver_allocations, ride_infos, ride_wait_times, estimated_ride_wait_times)
 
@@ -196,13 +195,6 @@ class App():
         url = base_url + 'data-request/save_data_to_file'
         content = {'info': info, 'file_name': file_name}
         requests.post(url, json=content)
-
-    # Client to train the model
-    def _train_model(self):
-        url = base_url + 'learning-request/train_model'
-        response = requests.post(url, json={})
-        # print(response.json())
-        return response.json()
 
     # Client to get estimated wait times
     def _get_estimated_times(self, ride_infos):
