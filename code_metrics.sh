@@ -83,22 +83,22 @@ function print-fbp-metrics() {
 function soa-halstead-metric() {
     key=$1
     metric=$2
-    find $key -iname '*.py' -a -not -path '*/data/*' -exec cat {} \; | radon hal - | grep $metric
+    find $key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon hal - | grep $metric
 }
 
 function soa-maintainability-index() {
     key=$1
-    find $key -iname '*.py' -a -not -path '*/data/*' -exec cat {} \; | radon mi -s -
+    find $key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon mi -s -
 }
 
 function soa-cyclomatic-complexity() {
     key=$1
-    find $key -iname '*.py' -a -not -path '*/data/*' -exec cat {} \; | radon cc -as - | grep Average
+    find $key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon cc -as - | grep Average
 }
 
 function soa-cognitive-complexity() {
     key=$1
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude "*/data/*" $key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude "*/data/*,soa_model_training.py" $key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
 }
 
 function print-soa-metrics() {
