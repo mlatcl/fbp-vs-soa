@@ -26,7 +26,7 @@ Note that SOA apps are implemented as Flask web services, and thus requires flas
 
 ### How to collect metrics
 
-Run [code_metrics.sh](code_metrics.sh) can collect code metrics for all the apps. We collect several (Halstead metrics)[https://en.wikipedia.org/wiki/Halstead_complexity_measures], (cyclomatic)[https://en.wikipedia.org/wiki/Cyclomatic_complexity] and (cognitive)[https://blog.sonarsource.com/cognitive-complexity-because-testability-understandability] complexities, (maintainability index)[https://radon.readthedocs.io/en/latest/intro.html#maintainability-index].
+Run [code_metrics.sh](code_metrics.sh) can collect code metrics for all the apps. We collect several [Halstead metrics](https://en.wikipedia.org/wiki/Halstead_complexity_measures), [cyclomatic](https://en.wikipedia.org/wiki/Cyclomatic_complexity) and [cognitive](https://blog.sonarsource.com/cognitive-complexity-because-testability-understandability) complexities, [maintainability index](https://radon.readthedocs.io/en/latest/intro.html#maintainability-index).
 
 To output metrics data in the console:
 
