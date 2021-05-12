@@ -10,7 +10,7 @@ function write-csv-header() {
     # notice order of metrics
     # each function that writes lines to this file has to follow that order
     filename=$1
-    echo "app_key,halstead_volume,halstead_difficulty,halstead_effort,maintainability_index,cyclomatic_complexity,cognitive_complexity" >> $filename
+    echo "App Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity" >> $filename
 }
 
 function average() {
@@ -23,6 +23,8 @@ function write-metrics-to-csv() {
     filename=$2
     paradigm=$(echo $key | cut -c1-3) # fbp or soa
     echo -n "$key," >> $filename
+    $paradigm-lloc $key | extract-number | xargs echo -n >> $filename
+    echo -n ',' >> $filename
     $paradigm-halstead-metric $key 'volume' | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
     $paradigm-halstead-metric $key 'difficulty' | extract-number | xargs echo -n >> $filename
@@ -38,6 +40,11 @@ function write-metrics-to-csv() {
 
 ################ FBP ################
 # each FBP app is in a single file, so we just analyze that file
+
+function fbp-lloc() {
+    key=$1
+    radon raw $key/$key.py | grep "LLOC"
+}
 
 function fbp-halstead-metric() {
     key=$1
@@ -62,6 +69,8 @@ function fbp-cognitive-complexity() {
 
 function print-fbp-metrics() {
     echo "######### Collecting metrics for app $1 #########"
+    echo -e "\nLogical lines of code"
+    fbp-lloc $1
     echo -e "\nHalstead complexity metrics"
     fbp-halstead-metric $1 'volume'
     fbp-halstead-metric $1 'difficulty'
@@ -79,6 +88,11 @@ function print-fbp-metrics() {
 ################ SOA ################
 # each SOA app consists of multiple files. Concretely we analyze main file and all files inside "flaskr" folder, but excluding data access layer which goes inside "data" folder
 # radon cannot handle such filtering logic, so we use find, cat all files together, and pipe that stdin stream to radon
+
+function soa-lloc() {
+    key=$1
+    find $key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon raw - | grep "LLOC"
+}
 
 function soa-halstead-metric() {
     key=$1
@@ -103,6 +117,8 @@ function soa-cognitive-complexity() {
 
 function print-soa-metrics() {
     echo "######### Collecting metrics for app $1 #########"
+    echo -e "\nLogical lines of code"
+    soa-lloc $1
     echo -e "\nHalstead complexity metrics"
     soa-halstead-metric $1 'volume'
     soa-halstead-metric $1 'difficulty'
