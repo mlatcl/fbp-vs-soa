@@ -1,3 +1,10 @@
+########
+# This code is here for posterity only.
+# In the first version of the repo it was comparing FBP to OOP, where classes where used to emulate real services.
+# Right now this code probably isn't compatible with main.py anymore, but we leave it here for posterity and reference.
+########
+
+
 from typing import List, Callable
 from datetime import datetime
 import jsonpickle
