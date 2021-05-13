@@ -30,3 +30,7 @@ Flask-Microservices==0.34.5
 
 # REST Client
 requests==2.25.1
+
+# Plots
+matplotlib==3.4.2
+seaborn==0.11.1
