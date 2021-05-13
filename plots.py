@@ -45,5 +45,5 @@ for metric in metrics:
     ax.set(xlabel="Application Stage", ylabel=metric.replace("_", " ").title())
     ax.grid(linestyle="-", linewidth="0.25", color="grey")
     ax.legend(title="Application Type", fancybox=True)
-    plt.savefig("figs/"+metric+".png")
+    plt.savefig("figs/"+metric+".pdf")
 
