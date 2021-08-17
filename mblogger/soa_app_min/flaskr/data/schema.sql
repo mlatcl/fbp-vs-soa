@@ -20,5 +20,5 @@ CREATE TABLE Posts(
   author_id INTEGER NOT NULL,
   text TEXT NOT NULL,
   time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  foreign key(passive_author) REFERENCES Authors(author_id)
+  foreign key(author_id) REFERENCES Authors(author_id)
 );
