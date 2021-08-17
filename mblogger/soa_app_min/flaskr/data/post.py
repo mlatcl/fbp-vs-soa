@@ -18,11 +18,11 @@ def create_post(post):
 def get_timeline(author):
     res = []
     db = get_db()
-    sql = 'SELECT * FROM Posts where author_id = ?'
+    sql = 'SELECT * FROM Posts as p, Authors as a where p.author_id = ? and p.author_id = a.author_id'
     values = [author['author_id']]
     cursor = db.execute(sql, values)
     for post in cursor:
-        r = {'post': post['post_id'], 'author': post['author_id'], 'text': post['text'],
+        r = {'post': post['post_id'], 'author': post['author_name'], 'text': post['text'],
              'time_stamp': post['time_stamp']}
         res.append(r)
     return res

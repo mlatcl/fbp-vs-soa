@@ -1,4 +1,5 @@
 from .db import get_db
+import json
 
 
 # Registers a new author in the database
@@ -26,17 +27,17 @@ def follows_author(follow):
     else:
         return follow['passive_author']
 
-
+    
 # Get list of follows for an author
 def get_list_follows(author):
     res = []
     db = get_db()
-    sql = 'SELECT * FROM Authors as a1, Follows as f, Authors as a2 WHERE a1.author_id = f.active_author ' \
-          'and a2.author_id = f.passive_author and a1.author_id = ?'
+    sql = 'SELECT a1.author_name active_author, a2.author_name passive_author FROM Authors as a1, Follows as f, Authors as a2 WHERE a1.author_id = f.active_author ' \
+          'and a2.author_id = f.passive_author and f.active_author = ?'
     values = [author['author_id']]
     cursor = db.execute(sql, values)
     for follow in cursor:
-        r = {'active_author': follow['a1.name'], 'passive_author': follow['a2.name']}
+        r = {'active_author': follow['active_author'], 'passive_author': follow['passive_author']}
         res.append(r)
     return res
 
@@ -45,11 +46,11 @@ def get_list_follows(author):
 def get_list_followers(author):
     res = []
     db = get_db()
-    sql = 'SELECT * FROM Authors as a1, Follows as f, Authors as a2 WHERE a1.author_id = f.passive_author ' \
-          'and a2.author_id = f.active_author and a1.author_id = ?'
+    sql = 'SELECT a1.author_name passive_author, a2.author_name active_author FROM Authors as a1, Follows as f, Authors as a2 WHERE a1.author_id = f.passive_author ' \
+          'and a2.author_id = f.active_author and f.passive_author = ?'
     values = [author['author_id']]
     cursor = db.execute(sql, values)
     for follow in cursor:
-        r = {'active_author': follow['a1.name'], 'passive_author': follow['a2.name']}
+        r = {'passive_author': follow['passive_author'], 'active_author': follow['active_author']}
         res.append(r)
     return res
