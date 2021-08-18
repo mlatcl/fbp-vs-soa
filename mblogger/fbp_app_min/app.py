@@ -59,7 +59,7 @@ class CurrentFollowingsStream(Stream):
         OutputPlug('followings', self)
 
     def compute(self) -> Dict:
-        return {'followings': data}
+        return {'followings': self.data}
 
 
 class CurrentFollowersStream(Stream):
@@ -68,7 +68,7 @@ class CurrentFollowersStream(Stream):
         OutputPlug('followers', self)
 
     def compute(self) -> Dict:
-        return {'followers': data}
+        return {'followers': self.data}
 
 
 class PostsStream(Stream):
@@ -77,7 +77,7 @@ class PostsStream(Stream):
         OutputPlug('posts', self)
 
     def compute(self) -> Dict:
-        return {'posts': data}
+        return {'posts': self.data}
 
 
 ############ output streams ##############
@@ -108,7 +108,7 @@ class TimelinesStream(Stream):
     def __init__(self, **kwargs):
         super(TimelinesStream, self).__init__(**kwargs)
         InputPlug('timelines', self)
-        OutputPlug('Timelines', self)
+        OutputPlug('timelines', self)
 
     def compute(self, timelines: List) -> Dict:
         self.add_data(timelines, lambda x: x.user_id)
@@ -175,17 +175,34 @@ class App():
         self._build()
 
 
+    def evaluate(self):
+        self.graph.evaluate()
+        return self.get_outputs()
+
+    def add_data(self, followings, followers, follow_requests, posts):
+        self.input_streams['current_followings_stream'].add_data(followings, key=lambda x: x.user_id)
+        self.input_streams['current_followers_stream'].add_data(followers, key=lambda x: x.user_id)
+        self.input_streams['follow_request_stream'].add_data(follow_requests)
+        self.input_streams['posts_stream'].add_data(posts)
+
+
+    def get_outputs(self):
+        followers = self.output_streams["updated_followers_stream"].get_data(drop=True)
+        followings = self.output_streams["updated_followings_stream"].get_data(drop=True)
+        timelines = self.output_streams["timelines_stream"].get_data(drop=True)
+
+        return followers, followings, timelines
+
+
     def _build(self) -> Graph:
         graph = Graph(name='MBlogger')
 
         # input streams
-        registration_stream = RegistrationStream(graph=graph)
         follow_request_stream = FollowRequestStream(graph=graph)
         current_followings_stream = CurrentFollowingsStream(graph=graph)
         current_followers_stream = CurrentFollowersStream(graph=graph)
         posts_stream = PostsStream(graph=graph)
         self.input_streams = {
-            'registration_stream': registration_stream,
             'follow_request_stream': follow_request_stream,
             'current_followings_stream': current_followings_stream,
             'current_followers_stream': current_followers_stream,
