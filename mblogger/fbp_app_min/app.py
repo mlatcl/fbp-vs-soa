@@ -35,13 +35,16 @@ class Stream(INode):
 
 ############ input streams ##############
 
-class RegistrationStream(Stream):
-    def __init__(self, **kwargs):
-        super(RegistrationStream, self).__init__(**kwargs)
-        OutputPlug('registrations', self)
+# at the moment it seems that we won't need registrations stream
+# as it does not influence the the app's logic
+
+# class RegistrationStream(Stream):
+#     def __init__(self, **kwargs):
+#         super(RegistrationStream, self).__init__(**kwargs)
+#         OutputPlug('registrations', self)
     
-    def compute(self) -> Dict:
-        return {'registrations': self.data}
+#     def compute(self) -> Dict:
+#         return {'registrations': self.data}
 
 
 class FollowRequestStream(Stream):
@@ -134,7 +137,7 @@ class UpdateFollows(INode):
             active = request.active_author
             passive = request.passive_author
 
-            if follow.follow:
+            if request.follow:
                 followings_as_dict[active].add(passive)
                 followers_as_dict[passive].add(active)
             else:
