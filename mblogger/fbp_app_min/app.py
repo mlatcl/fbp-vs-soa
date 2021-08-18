@@ -186,7 +186,7 @@ class App():
         self.input_streams['current_followings_stream'].add_data(followings, key=lambda x: x.user_id)
         self.input_streams['current_followers_stream'].add_data(followers, key=lambda x: x.user_id)
         self.input_streams['follow_request_stream'].add_data(follow_requests)
-        self.input_streams['posts_stream'].add_data(posts)
+        self.input_streams['posts_stream'].add_data(posts, key=lambda x: x.post_id)
 
 
     def get_outputs(self):
