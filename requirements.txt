@@ -4,6 +4,7 @@ flowpipe>=0.9.0
 jsonpickle>=2.0.0
 pandas>=1.1.5
 scikit-learn>=0.24.1
+essential-generators>=1.0
 
 # metrics
 radon>=4.5.0
