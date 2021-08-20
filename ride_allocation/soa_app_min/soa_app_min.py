@@ -150,7 +150,7 @@ class App():
         # print(response.json())
         return response.json()
 
-    # Parsing data for main programm
+    # Parsing data for main program
     def get_outputs(self, das, ris, rwts):
         driver_allocations = []
         for da in das:

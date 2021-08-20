@@ -2,55 +2,47 @@ from .db import get_db
 import json
 
 
-# Registers a new author in the database
-def registers_author(author):
-    db = get_db()
-    sql = 'INSERT INTO Authors (author_name) VALUES (?)'
-    values = [author['author_name']]
-    cursor = db.execute(sql, values)
-    db.commit()
-    if cursor.rowcount == 0:
-        return cursor.rowcount
-    else:
-        return cursor.lastrowid
-
-
 # Registers a new follow in the database
 def follows_author(follow):
     db = get_db()
-    sql = 'INSERT INTO Follows (active_author, passive_author) VALUES (?, ?)'
-    values = [follow['active_author'], follow['passive_author']]
+    sql = 'INSERT INTO Follows (active_author, passive_author, follow) VALUES (?, ?, ?)'
+    values = [follow['active_author'], follow['passive_author'], follow['follow']]
     cursor = db.execute(sql, values)
     db.commit()
-    if cursor.rowcount == 0:
-        return cursor.rowcount
-    else:
-        return follow['passive_author']
+    return cursor.rowcount
 
-    
-# Get list of follows for an author
-def get_list_follows(author):
+
+# Get list of followers for an author
+def get_list_followers():
     res = []
     db = get_db()
-    sql = 'SELECT a1.author_name active_author, a2.author_name passive_author FROM Authors as a1, Follows as f, Authors as a2 WHERE a1.author_id = f.active_author ' \
-          'and a2.author_id = f.passive_author and f.active_author = ?'
-    values = [author['author_id']]
-    cursor = db.execute(sql, values)
-    for follow in cursor:
-        r = {'active_author': follow['active_author'], 'passive_author': follow['passive_author']}
+    sql = 'SELECT DISTINCT passive_author FROM Follows WHERE follow = 1'
+    passive_authors = db.execute(sql)
+    for passive_author in passive_authors:
+        sql = 'SELECT active_author FROM Follows WHERE passive_author = ? AND follow = 1'
+        values = [passive_author]
+        active_authors = db.execute(sql,values)
+        followers = []
+        for active_author in active_authors:
+            followers.append(active_author)
+        r = {'user_id' : passive_author, 'followers': followers}
         res.append(r)
     return res
 
 
-# Get list of followers for an author
-def get_list_followers(author):
+# Get list of follows for an author
+def get_list_followings():
     res = []
     db = get_db()
-    sql = 'SELECT a1.author_name passive_author, a2.author_name active_author FROM Authors as a1, Follows as f, Authors as a2 WHERE a1.author_id = f.passive_author ' \
-          'and a2.author_id = f.active_author and f.passive_author = ?'
-    values = [author['author_id']]
-    cursor = db.execute(sql, values)
-    for follow in cursor:
-        r = {'passive_author': follow['passive_author'], 'active_author': follow['active_author']}
+    sql = 'SELECT DISTINCT active_author FROM Follows WHERE follow = 1'
+    active_authors = db.execute(sql)
+    for active_author in active_authors:
+        sql = 'SELECT passive_author FROM Follows WHERE active_author = ? AND follow = 1'
+        values = [active_author]
+        passive_authors = db.execute(sql, values)
+        followings = []
+        for passive_author in passive_authors:
+            followings.append(passive_author)
+        r = {'user_id': passive_author, 'followings': followings}
         res.append(r)
     return res

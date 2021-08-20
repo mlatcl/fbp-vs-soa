@@ -2,8 +2,9 @@ import sys
 import random
 import datetime
 
-from .fbp_app_min import App
-from .record_types import *
+# from mblogger.fbp_app_min import App
+from mblogger.soa_app_min import App
+from mblogger.record_types import *
 
 from essential_generators import DocumentGenerator
 
