@@ -2,8 +2,8 @@ import sys
 import random
 import datetime
 
-# from mblogger.fbp_app_min import App
-from mblogger.soa_app_min import App
+#from mblogger.fbp_app_min import App
+from mblogger.soa_app_min import soa_app_min
 from mblogger.record_types import *
 
 from essential_generators import DocumentGenerator
@@ -60,7 +60,8 @@ def generate_posts():
 
     return new_posts
 
-app = App()
+app = soa_app_min.App()
+#app = App()
 
 for step in range(n_steps):
     print(f"################### Iteration {step} ###################")
