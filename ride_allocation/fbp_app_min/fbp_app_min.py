@@ -6,7 +6,7 @@ import pickle
 
 
 from flowpipe import Graph, INode, Node, InputPlug, OutputPlug
-from record_types import *
+from ..record_types import *
 
 
 class Stream(INode):

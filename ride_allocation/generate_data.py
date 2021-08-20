@@ -2,7 +2,7 @@ import sys
 import random
 from datetime import datetime, timedelta
 
-from record_types import *
+from .record_types import *
 
 
 def generate_driver_ids(n=10):
