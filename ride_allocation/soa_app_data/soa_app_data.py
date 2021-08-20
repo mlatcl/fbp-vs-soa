@@ -1,9 +1,8 @@
 import requests
-from record_types import RideStatus, DriverStatus, DriverState, Location, RideInformation, RideWaitInfo
 from datetime import datetime, timedelta
 import json
 
-from record_types import *
+from ..record_types import RideStatus, DriverStatus, DriverState, Location, RideInformation, RideWaitInfo
 
 base_url = 'http://127.0.0.1:5000/'
 

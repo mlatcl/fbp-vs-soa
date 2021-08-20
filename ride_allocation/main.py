@@ -1,15 +1,15 @@
 import sys
 
-from record_types import *
-from generate_data import generate_requests, generate_init_driver_data, generate_ride_events
+from .record_types import *
+from .generate_data import generate_requests, generate_init_driver_data, generate_ride_events
 
 # importing all app implementations here
-import fbp_app_min
-import fbp_app_data
-import fbp_app_ml
-from soa_app_min import soa_app_min
-from soa_app_data import soa_app_data
-from soa_app_ml import soa_app_ml
+from . import fbp_app_min
+from . import fbp_app_data
+from . import fbp_app_ml
+from .soa_app_min import soa_app_min
+from .soa_app_data import soa_app_data
+from .soa_app_ml import soa_app_ml
 
 
 all_apps = {
