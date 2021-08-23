@@ -79,12 +79,16 @@ for step in range(n_steps):
     for user_id in user_ids:
         f = 0
         p = 0
-        record = next(r for r in followings if r.user_id == user_id)
-        if record is not None:
+        try:
+            record = next(r for r in followings if r.user_id == user_id)
             f = len(record.followings)
-        timeline = next(t for t in timelines if t.user_id == user_id)
-        if timeline is not None:
+        except StopIteration:
+            f = 0
+        try:
+            timeline = next(t for t in timelines if t.user_id == user_id)
             p = len(timeline.posts)
+        except StopIteration:
+            p = 0
         print(f"User {user_id} follows {f} users and has {p} posts in timeline")
 
     print()
