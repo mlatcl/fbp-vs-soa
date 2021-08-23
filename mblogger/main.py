@@ -2,10 +2,9 @@ import sys
 import random
 import datetime
 
-from essential_generators import DocumentGenerator
-
-
 from mblogger.record_types import *
+from mblogger.generate_data import generate_requests, generate_posts
+
 from mblogger import fbp_app_min
 from mblogger import fbp_app_data
 from mblogger.soa_app_min import soa_app_min
@@ -43,41 +42,6 @@ followings = [FollowingsRecord(user_id=i, followings=set()) for i in user_ids]
 followers = [FollowersRecord(user_id=i, followers=set()) for i in user_ids]
 posts = []
 
-def generate_requests():
-    requests = []
-
-    for _ in range(n_requests_per_step):
-        active, passive = random.sample(user_ids, 2)
-        follow_request = FollowRequest(active_author=active, passive_author=passive, follow=True)
-        requests.append(follow_request)
-    
-    for _ in range(n_unfollows_per_step):
-        followers_record = random.choice(followers)
-        if len(followers_record.followers) == 0:
-            # author has empty list of followers
-            # no unfollow requests this time then
-            break
-        active = followers_record.user_id
-        passive = random.choice(list(followers_record.followers))
-        unfollow_request = FollowRequest(active_author=active, passive_author=passive, follow=False)
-        
-        requests.append(unfollow_request)
-
-    return requests
-
-def generate_posts():
-    gen = DocumentGenerator()
-
-    new_posts = []
-    for _ in range(n_posts_per_step):
-        text = gen.sentence()
-        author_id = random.choice(user_ids)
-        post_id = len(posts) + len(new_posts) + 1
-        post = Post(post_id, author_id, text, timestamp=datetime.now())
-        new_posts.append(post)
-
-    return new_posts
-
 
 if len(sys.argv) != 2 or sys.argv[1] not in all_apps.keys():
     print("Usage:")
@@ -88,12 +52,13 @@ if len(sys.argv) != 2 or sys.argv[1] not in all_apps.keys():
 app_data = all_apps[sys.argv[1]]
 app = app_data["create_app"]()
 
+
 for step in range(n_steps):
     print(f"################### Iteration {step} ###################")
 
     print("--- Generating data ---")
-    follow_requests = generate_requests()
-    new_posts = generate_posts()
+    follow_requests = generate_requests(n_requests_per_step, n_unfollows_per_step, user_ids, followers)
+    new_posts = generate_posts(n_posts_per_step, user_ids, len(posts))
     posts.extend(new_posts)
     app.add_data(followings, followers, follow_requests, posts)
 
