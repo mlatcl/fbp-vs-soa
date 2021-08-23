@@ -2,8 +2,8 @@ import sys
 import random
 import datetime
 
-#from mblogger.fbp_app_min import App
-from mblogger.soa_app_min import soa_app_min
+from mblogger.fbp_app_min import App
+#from mblogger.soa_app_min import soa_app_min
 from mblogger.record_types import *
 
 from essential_generators import DocumentGenerator
@@ -60,8 +60,8 @@ def generate_posts():
 
     return new_posts
 
-app = soa_app_min.App()
-#app = App()
+#app = soa_app_min.App()
+app = App()
 
 for step in range(n_steps):
     print(f"################### Iteration {step} ###################")
@@ -76,9 +76,15 @@ for step in range(n_steps):
     followers, followings, timelines = app.evaluate()
 
     print("--- Stats after evaluation ---")
-    for record in followings:
-        user_id = record.user_id
+    for user_id in user_ids:
+        f = 0
+        p = 0
+        record = next(r for r in followings if r.user_id == user_id)
+        if record is not None:
+            f = len(record.followings)
         timeline = next(t for t in timelines if t.user_id == user_id)
-        print(f"User {record.user_id} follows {len(record.followings)} users and has {len(timeline.posts)} posts in timeline")
+        if timeline is not None:
+            p = len(timeline.posts)
+        print(f"User {user_id} follows {f} users and has {p} posts in timeline")
 
     print()

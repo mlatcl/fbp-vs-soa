@@ -22,34 +22,19 @@ def get_timelines():
     res = []
     users = []
     db = get_db()
-    sql = 'SELECT DISTINCT active_author FROM Follows'
-    cursor = db.execute(sql)
-    for row in cursor:
-        user = row['active_author']
-        users.append(user)
-    sql = 'SELECT DISTINCT passive_author FROM Follows'
-    cursor = db.execute(sql)
-    for row in cursor:
-        user = row['passive_author']
-        if user not in users:
-            users.append(user)
     sql = 'SELECT DISTINCT user_id FROM Posts'
     cursor = db.execute(sql)
-    for row in cursor:
-        user = row['user_id']
-        if user not in users:
-            users.append(user)
 
-    for user in users:
+    for user in cursor:
         sql = 'SELECT * FROM Posts WHERE user_id = ?'
-        values = [user]
+        values = [user['user_id']]
         posts = db.execute(sql,values)
         ps = []
         for post in posts:
             p = {'post_id': post['post_id'], 'author_id': post['user_id'], 'text': post['text'],
                  'timestamp': post['time_stamp'].strftime('%Y-%m-%d %H:%M:%S.%f')}
             ps.append(p)
-        tl = {'user_id': user, 'posts': ps}
+        tl = {'user_id': user['user_id'], 'posts': ps}
         res.append(tl)
     return res
 
