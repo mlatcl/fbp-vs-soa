@@ -2,7 +2,8 @@ import sys
 import random
 import datetime
 
-from mblogger.fbp_app_min import App
+#from mblogger.fbp_app_min import App
+from mblogger.fbp_app_data import App
 #from mblogger.soa_app_min import soa_app_min
 from mblogger.record_types import *
 
