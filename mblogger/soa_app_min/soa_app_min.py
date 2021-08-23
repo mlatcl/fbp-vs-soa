@@ -47,7 +47,7 @@ class App():
                 follows.append(f)
             url = base_url + 'author-request/follows'
             response = requests.post(url, json=follows)
-            print(response.json())
+            # print(response.json())
 
     # Client to add follows data
     def _add_posts(self, posts):
@@ -55,10 +55,11 @@ class App():
             ps = []
             for post in posts:
                 p = post.to_dict()
+                p['timestamp'] = str(post.timestamp)
                 ps.append(p)
             url = base_url + 'post-request/create_posts'
             response = requests.post(url, json=ps)
-            print(response.json())
+            # print(response.json())
 
     # Parsing data for main program
     def get_outputs(self, followers, followings, timelines):
@@ -71,7 +72,9 @@ class App():
     def _parse_followers(self, followers):
         fs = []
         for follower in followers:
+            fls = follower['followers']
             f = FollowersRecord.from_dict(follower)
+            f.followers = fls
             fs.append(f)
         return fs
 
@@ -79,7 +82,9 @@ class App():
     def _parse_followings(self, followings):
         fs = []
         for following in followings:
+            fls = following['followings']
             f = FollowingsRecord.from_dict(following)
+            f.followings = fls
             fs.append(f)
         return fs
 
@@ -87,8 +92,11 @@ class App():
     def _parse_timelines(self, timelines):
         ts = []
         for timeline in timelines:
-            timeline['timestamp'] = datetime.strptime(timeline['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
-            t = FollowingsRecord.from_dict(timeline)
+            posts = timeline['posts']
+            for post in posts:
+                post['timestamp'] = datetime.strptime(post['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
+            timeline['posts'] = posts
+            t = Timeline.from_dict(timeline)
             ts.append(t)
         return ts
 
