@@ -42,3 +42,19 @@ class Post:
 class Timeline:
     user_id: int
     posts: List[Post]
+
+
+@dataclass_json
+@dataclass
+class PersonalDictionary:
+    user_id: int
+    words: set
+
+
+@dataclass_json
+@dataclass
+class GeneratePostInput:
+    # which user to generate the post for
+    user_id: int
+    # length of post in words
+    length: int
