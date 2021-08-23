@@ -1,6 +1,5 @@
 from typing import List, Dict, Callable, Tuple
 from datetime import datetime
-from collections import namedtuple
 
 import random
 import itertools as it

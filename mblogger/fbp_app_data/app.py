@@ -1,6 +1,5 @@
 from typing import List, Dict, Callable, Tuple
 from datetime import datetime
-from collections import namedtuple
 
 from flowpipe import Graph, INode, Node, InputPlug, OutputPlug
 from mblogger.record_types import *
