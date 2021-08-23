@@ -2,12 +2,29 @@ import sys
 import random
 import datetime
 
-#from mblogger.fbp_app_min import App
-from mblogger.fbp_app_data import App
-#from mblogger.soa_app_min import soa_app_min
-from mblogger.record_types import *
-
 from essential_generators import DocumentGenerator
+
+
+from mblogger.record_types import *
+from mblogger import fbp_app_min
+from mblogger import fbp_app_data
+from mblogger.soa_app_min import soa_app_min
+
+
+all_apps = {
+    "fbp_app_min": {
+        "description": "FBP app that only provides basic functionality.",
+        "create_app": (lambda: fbp_app_min.App())
+    },
+    "fbp_app_data": {
+        "description": "FBP app that is able to collect data.",
+        "create_app": (lambda: fbp_app_data.App())
+    },
+    "soa_app_min": {
+        "description": "SOA app that only provides basic functionality.",
+        "create_app": (lambda: soa_app_min.App())
+    }
+}
 
 random.seed(42)
 
@@ -61,8 +78,15 @@ def generate_posts():
 
     return new_posts
 
-#app = soa_app_min.App()
-app = App()
+
+if len(sys.argv) != 2 or sys.argv[1] not in all_apps.keys():
+    print("Usage:")
+    print("    python main.py <app_name>")
+    print("List of available app names: " + " , ".join(all_apps.keys()))
+    exit(1)
+
+app_data = all_apps[sys.argv[1]]
+app = app_data["create_app"]()
 
 for step in range(n_steps):
     print(f"################### Iteration {step} ###################")
