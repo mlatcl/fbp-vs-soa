@@ -4,6 +4,18 @@ from collections import namedtuple
 from flowpipe import Graph, INode, Node, InputPlug, OutputPlug
 from insurance_claims.record_types import *
 
+# threshold to decide if claim is high or low value
+HIGH_VALUE_CLAIM_THRESHOLD = 60000
+
+# claims below this value are considered simple
+SIMPLE_CLAIM_VALUE_THRESHOLD = 5000
+
+# in reality sometimes the claims will be paid in full, and sometimes partially or not at all
+# to average this out let's just always pay out a certain partial amount
+# we assume simple claims will be paid out more often
+SIMPLE_CLAIMS_PAYOUT_RATE = 0.8
+COMPLEX_CLAIMS_PAYOUT_RATE = 0.5
+
 
 class Stream(INode):
     def __init__(self, **kwargs):
@@ -122,7 +134,8 @@ class CalculateClaimValue(INode):
         OutputPlug('claim_values', self)
     
     def compute(self, claims: List[Dict]) -> Dict:
-        return {'claim_values': []}
+        claim_values = [ClaimValue(claim_id=c["claim_id"], value=c["total_claim_amount"]) for c in claims]
+        return {'claim_values': claim_values}
 
 
 class ClassifyClaimValue(INode):
@@ -134,7 +147,19 @@ class ClassifyClaimValue(INode):
         OutputPlug('low_value_claims', self)
     
     def compute(self, claims: List[Dict], claim_values: List[ClaimValue]) -> Dict:
-        return {'high_value_claims': [], 'low_value_claims': []}
+        # these loops are twice as slow as they should be
+        # because this filtering can be done in one iteration
+        # but we won't be running crazy lots of data, so clarity first is ok
+
+        # also this can be done with filter(), but i like generator syntax more
+
+        high_value_claim_ids = [cv.claim_id for cv in claim_values if cv.value >= HIGH_VALUE_CLAIM_THRESHOLD]
+        low_value_claim_ids = [cv.claim_id for cv in claim_values if cv.value < HIGH_VALUE_CLAIM_THRESHOLD]
+
+        high_value_claims = [c for c in claims if c["claim_id"] in high_value_claim_ids]
+        low_value_claims = [c for c in claims if c["claim_id"] in low_value_claim_ids]
+
+        return {'high_value_claims': high_value_claims, 'low_value_claims': low_value_claims}
 
 
 class ClassifyClaimComplexity(INode):
@@ -143,9 +168,28 @@ class ClassifyClaimComplexity(INode):
         InputPlug('claims', self)
         OutputPlug('simple_claims', self)
         OutputPlug('complex_claims', self)
-    
+
     def compute(self, claims: List[Dict]) -> Dict:
-        return {'simple_claims': [], 'complex_claims': []}
+        # just some almost random logic here
+        def is_claim_complex(claim):
+            if claim["total_claim_amount"] <= SIMPLE_CLAIM_VALUE_THRESHOLD:
+                # small claims are never complex
+                return False
+
+            if claim["auto_year"] < 2000:
+                # old cars yield complex cases
+                return True
+            
+            if claim["witnesses"] == 0 and claim["police_report_available"] != "YES":
+                # no objective evidence of incident cause
+                return True
+
+            return False
+
+        simple_claims = [c for c in claims if not is_claim_complex(c)]
+        complex_claims = [c for c in claims if is_claim_complex(c)]
+
+        return {'simple_claims': simple_claims, 'complex_claims': complex_claims}
 
 
 class CalculateSimpleClaimsPayout(INode):
@@ -153,9 +197,12 @@ class CalculateSimpleClaimsPayout(INode):
         super(CalculateSimpleClaimsPayout, self).__init__(**kwargs)
         InputPlug('simple_claims', self)
         OutputPlug('simple_claim_payouts', self)
-    
+
     def compute(self, simple_claims: List[Dict]) -> Dict:
-        return {'simple_claim_payouts': []}
+        simple_claim_payouts = [ClaimPayout(claim_id=c["claim_id"], payout=SIMPLE_CLAIMS_PAYOUT_RATE * c["total_claim_amount"])
+                                for c in simple_claims]
+
+        return {'simple_claim_payouts': simple_claim_payouts}
 
 
 class CalculateComplexClaimsPayout(INode):
@@ -164,9 +211,14 @@ class CalculateComplexClaimsPayout(INode):
         InputPlug('complex_claims', self)
         InputPlug('high_value_claims', self)
         OutputPlug('complex_claim_payouts', self)
-    
+
     def compute(self, complex_claims: List[Dict], high_value_claims: List[Dict]) -> Dict:
-        return {'complex_claim_payouts': []}
+        complex_claim_payouts = [ClaimPayout(claim_id=c["claim_id"], payout=COMPLEX_CLAIMS_PAYOUT_RATE * c["total_claim_amount"])
+                                for c in complex_claims]
+        complex_claim_payouts += [ClaimPayout(claim_id=c["claim_id"], payout=COMPLEX_CLAIMS_PAYOUT_RATE * c["total_claim_amount"])
+                                  for c in high_value_claims]
+
+        return {'complex_claim_payouts': complex_claim_payouts}
 
 
 class App():
@@ -211,6 +263,7 @@ class App():
         calculate_claim_value.outputs["claim_values"] >> claim_values_stream.inputs["claim_values"]
 
         self.new_claims_stream.outputs["new_claims"] >> classify_claim_value.inputs["claims"]
+        claim_values_stream.outputs["claim_values"] >> classify_claim_value.inputs["claim_values"]
         classify_claim_value.outputs["low_value_claims"] >> low_value_claims_stream.inputs["low_value_claims"]
         classify_claim_value.outputs["high_value_claims"] >> high_value_claims_stream.inputs["high_value_claims"]
 
