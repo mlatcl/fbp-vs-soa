@@ -5,12 +5,34 @@ import pathlib
 
 
 
-from insurance_claims.fbp_app_min import App
+from insurance_claims import fbp_app_min
+from insurance_claims import fbp_app_data
+
+all_apps = {
+    "fbp_app_min": {
+        "description": "FBP app that only provides basic functionality.",
+        "create_app": (lambda: fbp_app_min.App()),
+        "can_collect_data": False
+    },
+    "fbp_app_data": {
+        "description": "FBP app that is able to collect data.",
+        "create_app": (lambda: fbp_app_data.App()),
+        "can_collect_data": True
+    }
+}
+
+if len(sys.argv) != 2 or sys.argv[1] not in all_apps.keys():
+    print("Usage:")
+    print("    python main.py <app_name>")
+    print("List of available app names: " + " , ".join(all_apps.keys()))
+    exit(1)
+
+app_data = all_apps[sys.argv[1]]
 
 
 random.seed(42)
 
-n_steps = 5
+n_steps = 10
 n_claims_per_step = 5
 
 # we know csv with input data is always near this file main.py is
@@ -22,9 +44,8 @@ input_data_df['claim_id'] = input_data_df.index
 input_data = input_data_df.to_dict(orient='records')
 
 
-app = App()
 total_amount_claimed = 0.0
-
+total_amount_paid = 0.0
 
 for step in range(n_steps):
     print(f"################### Iteration {step} ###################")
@@ -35,9 +56,13 @@ for step in range(n_steps):
     print(f"Total amount claimed: {total_amount_claimed}")
 
     print("--- Evaluating the app ---")
+    app = app_data["create_app"]()
     app.add_data(input_records)
-    claim_payouts = app.evaluate()
+    if app_data["can_collect_data"]:
+        claim_payouts = app.evaluate(save_dataset=True)
+    else:
+        claim_payouts = app.evaluate()
 
     print("--- Processing app output ---")
-    total_amount_paid = sum([cp.payout for cp in claim_payouts])
+    total_amount_paid += sum([cp.payout for cp in claim_payouts])
     print(f"Total amount paid: {total_amount_paid}")
