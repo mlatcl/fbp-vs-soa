@@ -1,5 +1,8 @@
+import os
 from typing import List, Dict, Callable, Tuple
 from collections import namedtuple
+
+import pandas as pd
 
 from flowpipe import Graph, INode, Node, InputPlug, OutputPlug
 from insurance_claims.record_types import *
@@ -229,8 +232,10 @@ class App():
     def __init__(self):
         self._build()
 
-    def evaluate(self):
+    def evaluate(self, save_dataset=False):
         self.graph.evaluate()
+        if save_dataset:
+            self._save_dataset()
         return self.get_outputs()
 
     def add_data(self, new_claims):
@@ -288,6 +293,50 @@ class App():
         calculate_complex_claim_payout.outputs["complex_claim_payouts"] >> self.claim_payouts_stream.inputs["complex_claim_payouts"]
 
         self.graph = graph
+
+
+    def _save_dataset(self):
+        nodes_to_collect = ["", "ComplexClaimsStream", "SimpleClaimsStream"]
+
+        get_stream_node_data = \
+            lambda node_name: (next(node for node in self.graph.all_nodes if node.name == node_name)).get_data()
+
+        new_claims = get_stream_node_data("NewClaimsStream")
+        complex_claims = get_stream_node_data("ComplexClaimsStream")
+        complex_claim_ids = [c["claim_id"] for c in complex_claims]
+        simple_claims = get_stream_node_data("SimpleClaimsStream")
+        simple_claim_ids = [c["claim_id"] for c in simple_claims]
+
+        df = pd.DataFrame.from_records(new_claims)
+        df['is_complex'] = pd.Series(dtype="boolean")
+
+        for index, row in df.iterrows():
+            if row["claim_id"] in complex_claim_ids:
+                df.at[index, "is_complex"] = True
+            elif row["claim_id"] in simple_claim_ids:
+                df.at[index, "is_complex"] = False
+            else:
+                raise ValueError(f"Cannot find claim {row['claim_id']}")
+
+        self._write_data_to_csv("claim_complexity.csv", df)
+
+    def _write_data_to_csv(self, filename, df):
+        """
+        Writes data from given pandas DataFrame to file
+        Creates new file (with header) if it doesn't exist
+        otherwise appends data to existing file
+
+        Does not do anything if the dataset is empty
+        """
+        if df.empty:
+            return
+
+        if os.path.isfile(filename):
+            df.to_csv(filename, mode="a", index=False, header=False)
+        else:
+            df.to_csv(filename, mode="w", index=False, header=True)
+
+
 
 
 if __name__ == "__main__":
