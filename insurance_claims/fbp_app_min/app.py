@@ -103,10 +103,12 @@ class SimpleClaimsStream(Stream):
 class ComplexClaimsStream(Stream):
     def __init__(self, **kwargs):
         super(ComplexClaimsStream, self).__init__(**kwargs)
+        InputPlug('high_value_claims', self)
         InputPlug('complex_claims', self)
         OutputPlug('complex_claims', self)
 
-    def compute(self, complex_claims: List[Dict]) -> Dict:
+    def compute(self, high_value_claims: List[Dict], complex_claims: List[Dict]) -> Dict:
+        self.add_data(high_value_claims, lambda x: x["claim_id"])
         self.add_data(complex_claims, lambda x: x["claim_id"])
         return {'complex_claims': self.data}
 
@@ -209,14 +211,11 @@ class CalculateComplexClaimsPayout(INode):
     def __init__(self, **kwargs):
         super(CalculateComplexClaimsPayout, self).__init__(**kwargs)
         InputPlug('complex_claims', self)
-        InputPlug('high_value_claims', self)
         OutputPlug('complex_claim_payouts', self)
 
-    def compute(self, complex_claims: List[Dict], high_value_claims: List[Dict]) -> Dict:
+    def compute(self, complex_claims: List[Dict]) -> Dict:
         complex_claim_payouts = [ClaimPayout(claim_id=c["claim_id"], payout=COMPLEX_CLAIMS_PAYOUT_RATE * c["total_claim_amount"])
                                 for c in complex_claims]
-        complex_claim_payouts += [ClaimPayout(claim_id=c["claim_id"], payout=COMPLEX_CLAIMS_PAYOUT_RATE * c["total_claim_amount"])
-                                  for c in high_value_claims]
 
         return {'complex_claim_payouts': complex_claim_payouts}
 
@@ -267,12 +266,12 @@ class App():
         classify_claim_value.outputs["low_value_claims"] >> low_value_claims_stream.inputs["low_value_claims"]
         classify_claim_value.outputs["high_value_claims"] >> high_value_claims_stream.inputs["high_value_claims"]
 
+        high_value_claims_stream.outputs["high_value_claims"] >> complex_claims_stream.inputs["high_value_claims"]
         low_value_claims_stream.outputs["low_value_claims"] >> classify_claim_complexity.inputs["claims"]
         classify_claim_complexity.outputs["simple_claims"] >> simple_claims_stream.inputs["simple_claims"]
         classify_claim_complexity.outputs["complex_claims"] >> complex_claims_stream.inputs["complex_claims"]
 
         simple_claims_stream.outputs["simple_claims"] >> calculate_simple_claim_payout.inputs["simple_claims"]
-        high_value_claims_stream.outputs["high_value_claims"] >> calculate_complex_claim_payout.inputs["high_value_claims"]
         complex_claims_stream.outputs["complex_claims"] >> calculate_complex_claim_payout.inputs["complex_claims"]
 
         calculate_simple_claim_payout.outputs["simple_claim_payouts"] >> self.claim_payouts_stream.inputs["simple_claim_payouts"]
