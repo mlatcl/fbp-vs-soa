@@ -41,15 +41,6 @@ class Stream(INode):
 
 ############ input streams ##############
 
-class AuthorsStream(Stream):
-    def __init__(self, **kwargs):
-        super(AuthorsStream, self).__init__(**kwargs)
-        OutputPlug('authors', self)
-    
-    def compute(self) -> Dict:
-        return {'authors': self.data}
-
-
 class FollowRequestStream(Stream):
     def __init__(self, **kwargs):
         super(FollowRequestStream, self).__init__(**kwargs)
