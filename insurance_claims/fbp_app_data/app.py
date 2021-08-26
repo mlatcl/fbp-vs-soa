@@ -1,6 +1,5 @@
 import os
 from typing import List, Dict, Callable, Tuple
-from collections import namedtuple
 
 import pandas as pd
 
@@ -259,11 +258,6 @@ class App():
 
         # output streams
         self.claim_payouts_stream = ClaimPayoutStream(graph=graph)
-
-        self._all_streams = [self.new_claims_stream, claim_values_stream,
-                             high_value_claims_stream, low_value_claims_stream,
-                             simple_claims_stream, complex_claims_stream,
-                             self.claim_payouts_stream]
 
         # processing nodes
         calculate_claim_value = CalculateClaimValue(graph=graph)
