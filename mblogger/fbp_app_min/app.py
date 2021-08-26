@@ -35,18 +35,6 @@ class Stream(INode):
 
 ############ input streams ##############
 
-# at the moment it seems that we won't need registrations stream
-# as it does not influence the the app's logic
-
-# class RegistrationStream(Stream):
-#     def __init__(self, **kwargs):
-#         super(RegistrationStream, self).__init__(**kwargs)
-#         OutputPlug('registrations', self)
-    
-#     def compute(self) -> Dict:
-#         return {'registrations': self.data}
-
-
 class FollowRequestStream(Stream):
     def __init__(self, **kwargs):
         super(FollowRequestStream, self).__init__(**kwargs)
