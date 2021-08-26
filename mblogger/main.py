@@ -9,6 +9,7 @@ from mblogger import fbp_app_min
 from mblogger import fbp_app_data
 from mblogger import fbp_app_ml
 from mblogger.soa_app_min import soa_app_min
+from mblogger.soa_app_data import soa_app_data
 
 
 all_apps = {
@@ -30,6 +31,11 @@ all_apps = {
     "soa_app_min": {
         "description": "SOA app that only provides basic functionality.",
         "create_app": (lambda: soa_app_min.App()),
+        "generates_posts": False
+    },
+    "soa_app_min": {
+        "description": "SOA app that is able to collect data.",
+        "create_app": (lambda: soa_app_data.App()),
         "generates_posts": False
     }
 }
