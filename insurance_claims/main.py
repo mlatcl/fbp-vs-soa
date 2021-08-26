@@ -31,4 +31,4 @@ for step in range(n_steps):
 
     # print output
     total_amount_paid = sum([cp.payout for cp in claim_payouts])
-    print(f"Total amount claimed: {total_amount_paid}")
+    print(f"Total amount paid: {total_amount_paid}")
