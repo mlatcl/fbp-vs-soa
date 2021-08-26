@@ -7,6 +7,11 @@ import pathlib
 
 from insurance_claims import fbp_app_min
 from insurance_claims import fbp_app_data
+from insurance_claims import fbp_app_ml
+
+directory_path = pathlib.Path(__file__).parent.resolve()
+training_artifacts_dir_path = directory_path.joinpath("fbp_app_ml/training_artifacts")
+
 
 all_apps = {
     "fbp_app_min": {
@@ -18,6 +23,11 @@ all_apps = {
         "description": "FBP app that is able to collect data.",
         "create_app": (lambda: fbp_app_data.App()),
         "can_collect_data": True
+    },
+    "fbp_app_ml": {
+        "description": "FBP app that replaces app logic with an ML model, while producing the same output.",
+        "create_app": (lambda: fbp_app_ml.App(training_artifacts_dir_path)),
+        "can_collect_data": False
     }
 }
 
@@ -38,7 +48,6 @@ n_claims_per_step = 5
 # we know csv with input data is always near this file main.py is
 # so here we retrieve main.py's directory here
 # this way resulting path is the same regardless of how and where the file is executed
-directory_path = pathlib.Path(__file__).parent.resolve()
 input_data_df = pd.read_csv(directory_path.joinpath("insurance_claims.csv"))
 input_data_df['claim_id'] = input_data_df.index
 input_data = input_data_df.to_dict(orient='records')
