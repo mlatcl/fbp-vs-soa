@@ -72,11 +72,12 @@ class App():
 
     # Client to add a generated post
     def _add_generated_post(self, input_record):
-        req = {}
-        req['user_id'] = input_record.user_id
-        req['length'] = input_record.length
-        url = base_url + 'post-request/generate_post'
-        response = requests.post(url, json=req)
+        for ir in input_record:
+            req = {}
+            req['user_id'] = ir.user_id
+            req['length'] = ir.length
+            url = base_url + 'post-request/generate_post'
+            response = requests.post(url, json=req)
 
     # Parsing data for main program
     def get_outputs(self, followers, followings, timelines, generated_posts):

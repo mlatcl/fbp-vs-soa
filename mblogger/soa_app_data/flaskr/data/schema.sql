@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS Follows;
 DROP TABLE IF EXISTS Posts;
-DROP TABLE IF EXISTS PersonalDictionary;
+DROP TABLE IF EXISTS PersonalDictionaries;
 DROP TABLE IF EXISTS Bigrams;
 
 CREATE TABLE Follows(
