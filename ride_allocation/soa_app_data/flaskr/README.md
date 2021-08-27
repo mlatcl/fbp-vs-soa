@@ -10,4 +10,4 @@ Run next commands in console in the project path fbp-vs-soa/ride_allocation/soa_
     * $ export FLASK_ENV=development
     * $ flask init-db
     * $ flask run
-3. Run the main file of the fbp-vs-soa project passing "soa_app_data" as a parameter
+3. Run the main file of the fbp-vs-soa/ride_allocation project passing "soa_app_data" as a parameter
