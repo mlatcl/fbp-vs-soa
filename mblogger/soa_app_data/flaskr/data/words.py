@@ -16,11 +16,6 @@ def update_bigrams(post):
         db.execute(sql, values)
         db.commit()
 
-    sql = 'SELECT first_word, second_word, weight FROM Bigrams'
-    cursor = db.execute(sql)
-    for bigram in cursor:
-        print(bigram['first_word'] + '::' + bigram['second_word'] + '::' + str(bigram['weight']))
-
 
 # Get list of followers for an author
 def update_personal_directory(post):
@@ -34,9 +29,4 @@ def update_personal_directory(post):
         values = [user_id, word, word]
         db.execute(sql, values)
         db.commit()
-
-    sql = 'SELECT user_id, word FROM PersonalDictionaries'
-    cursor = db.execute(sql)
-    for word in cursor:
-        print(word['user_id'] + '::' + word['word'])
 

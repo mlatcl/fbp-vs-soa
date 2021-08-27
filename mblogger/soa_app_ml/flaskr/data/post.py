@@ -84,14 +84,17 @@ def generate_post(req):
             bigram_weights_dict[first_word,row2['second_word']] = row2['weight']
         bigrams_dict[first_word] = words
 
-    if len(personal_words) > 0:
-        text = " ".join(it.islice(_word_generator(personal_words), length))
-        sql = 'INSERT INTO Posts (post_id, user_id, text, type, time_stamp) VALUES (?,?,?,1,?) ' \
-              'ON CONFLICT(post_id) DO UPDATE SET text = ?'
-        values = [random.getrandbits(64), user_id, text, datetime.strptime(datetime.now(), '%Y-%m-%d %H:%M:%S.%f'), text]
-        cursor = db.execute(sql, values)
-        db.commit()
-        return cursor.lastrowid
+    if len(personal_words) > 0 or len(personal_words) == 0:
+        text = " ".join(it.islice(_word_generator(personal_words,bigrams_dict,bigram_weights_dict), length))
+        if len(text) > 0:
+            sql = 'INSERT INTO Posts (post_id, user_id, text, type, time_stamp) VALUES (?,?,?,1,?) ' \
+                'ON CONFLICT(post_id) DO UPDATE SET text = ?'
+            values = [random.getrandbits(8), user_id, text, datetime.strptime(str(datetime.now()), '%Y-%m-%d %H:%M:%S.%f'), text]
+            cursor = db.execute(sql, values)
+            db.commit()
+            return cursor.lastrowid
+        else:
+            return 0
     else:
         return 0
 

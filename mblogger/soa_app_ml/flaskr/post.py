@@ -11,9 +11,10 @@ def create_posts():
     res = {}
     req = request.get_json()
     for r in req:
+        affected = post.create_post(r)
         words.update_bigrams(r)
         words.update_personal_directory(r)
-        affected = post.create_post(r)
+
     res['msg'] = 'New posts created = ' + str(affected)
     res = make_response(jsonify(res), 200)
     return res
