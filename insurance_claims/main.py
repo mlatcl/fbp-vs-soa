@@ -7,6 +7,7 @@ from insurance_claims import fbp_app_min
 from insurance_claims import fbp_app_data
 from insurance_claims import fbp_app_ml
 from insurance_claims.soa_app_min import soa_app_min
+from insurance_claims.soa_app_data import soa_app_data
 
 directory_path = pathlib.Path(__file__).parent.resolve()
 training_artifacts_dir_path = directory_path.joinpath("fbp_app_ml/training_artifacts")
@@ -31,6 +32,11 @@ all_apps = {
         "description": "SOA app that only provides basic functionality.",
         "create_app": (lambda: soa_app_min.App()),
         "can_collect_data": False
+    },
+    "soa_app_data": {
+        "description": "SOA app that is able to collect data.",
+        "create_app": (lambda: soa_app_data.App()),
+        "can_collect_data": True
     }
 }
 
