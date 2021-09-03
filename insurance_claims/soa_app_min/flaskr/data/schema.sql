@@ -1,7 +1,7 @@
 DROP TABLE IF EXISTS Claims;
 
 CREATE TABLE Claims(
-  claim_id INTEGER AUTOINCREMENT PRIMARY KEY,
+  claim_id INTEGER PRIMARY KEY,
   months_as_customer INTEGER NOT NULL,
   age INTEGER NOT NULL,
   policy_number INTEGER NOT NULL,
@@ -17,9 +17,10 @@ CREATE TABLE Claims(
   insured_occupation TEXT NOT NULL,
   insured_hobbies TEXT NOT NULL,
   insured_relationship TEXT NOT NULL,
-  capital-gains INTEGER NOT NULL,
-  capital-loss INTEGER NOT NULL,
+  capital_gains INTEGER NOT NULL,
+  capital_loss INTEGER NOT NULL,
   incident_date TIMESTAMP NOT NULL,
+  incident_type TEXT NOT NULL,
   collision_type TEXT NOT NULL,
   incident_severity TEXT NOT NULL,
   authorities_contacted TEXT NOT NULL,
