@@ -37,6 +37,11 @@ all_apps = {
         "description": "SOA app that is able to collect data.",
         "create_app": (lambda: soa_app_data.App()),
         "can_collect_data": True
+    },
+    "soa_app_ml": {
+        "description": "SOA app that replaces app logic with an ML model, while producing the same output..",
+        "create_app": (lambda: soa_app_data.App()),
+        "can_collect_data": True
     }
 }
 
