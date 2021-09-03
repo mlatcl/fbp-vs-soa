@@ -40,6 +40,6 @@ CREATE TABLE Claims(
   auto_make TEXT NOT NULL,
   auto_model TEXT NOT NULL,
   auto_year INTEGER NOT NULL,
-  is_complex INTEGER NOT NULL,
+  is_complex TEXT NOT NULL,
   state INTEGER NOT NULL
 );
