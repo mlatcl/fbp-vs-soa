@@ -35,11 +35,20 @@ def classify_claims_value():
     return res
 
 
-# Process claims API
+# Classify claims complexity API
 @bp.route('/classify_claims_complexity', methods=('GET', 'POST'))
 def classify_claims_complexity():
     req = request.get_json()
     res = claim.classify_claims_complexity(req)
+    res = make_response(jsonify(res), 200)
+    return res
+
+
+# Update claims API
+@bp.route('/update_claims_complexity', methods=('GET', 'POST'))
+def update_claims_complexity():
+    req = request.get_json()
+    res = claim.update_claims_complexity(req)
     res = make_response(jsonify(res), 200)
     return res
 

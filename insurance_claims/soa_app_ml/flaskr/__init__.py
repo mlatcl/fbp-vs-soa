@@ -35,7 +35,7 @@ def create_app(test_config=None):
     from . import claim
     app.register_blueprint(claim.bp)
 
-    from . import predict
-    app.register_blueprint(predict.bp)
+    from . import learning
+    app.register_blueprint(learning.bp)
 
     return app

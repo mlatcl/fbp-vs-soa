@@ -3,11 +3,12 @@ import pickle
 
 import pandas as pd
 
-training_artifacts_dir_path = '../training_artifacts/'
+training_artifacts_dir_path = './flaskr/training_artifacts/'
+
 
 # Predicts claims complexity
 def predict_claims_complexity(claims):
-    model_path = training_artifacts_dir_path.joinpath("fbp_model.obj")
+    model_path = training_artifacts_dir_path + "fbp_model.obj"
     model = None
     if os.path.isfile(model_path):
         with open(model_path, "rb") as f:
@@ -20,7 +21,7 @@ def predict_claims_complexity(claims):
     for column_name in df.columns:
         if df[column_name].dtype == object:
             # load LabelEncoder and encode column
-            file_name = training_artifacts_dir_path.joinpath(f"{column_name}_encoder.obj")
+            file_name = training_artifacts_dir_path + f"{column_name}_encoder.obj"
             with open(file_name, "rb") as f:
                 le = pickle.load(f)
             df[column_name] = le.transform(df[column_name])

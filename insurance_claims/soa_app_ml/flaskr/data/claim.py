@@ -43,14 +43,16 @@ def get_claims_info(claims):
     res = []
     db = get_db()
     claim_ids = []
-    for claim in claims:
+    for claim in claims['high_value_claims']:
+        claim_ids.append(claim['claim_id'])
+    for claim in claims['low_value_claims']:
         claim_ids.append(claim['claim_id'])
     sql = 'SELECT * FROM Claims WHERE claim_id IN (%s) ' % ("?," * len(claim_ids))[:-1]
     cursor = db.execute(sql, claim_ids)
     for claim in cursor:
         c = {}
         for des in cursor.description:
-            if des[0] != 'state':
+            if des[0] != 'state' and des[0] != 'is_complex':
                 c[des[0]] = claim[des[0]]
         res.append(c)
     return res
@@ -108,7 +110,14 @@ def classify_claims_complexity(claims):
         for claim in cursor:
             c = {'claim_id': claim['claim_id'], 'total_claim_amount': claim['total_claim_amount']}
             complex_claims.append(c)
+    return {'simple_claims': simple_claims, 'complex_claims': complex_claims}
 
+
+# Update claims by complexity
+def update_claims_complexity(claims):
+    db = get_db()
+    simple_claims = claims['simple_claims']
+    complex_claims = claims['complex_claims']
     for claim in simple_claims:
         sql = 'UPDATE Claims SET is_complex = "FALSE" WHERE claim_id = ?'
         values = [claim['claim_id']]
@@ -119,7 +128,6 @@ def classify_claims_complexity(claims):
         values = [claim['claim_id']]
         db.execute(sql, values)
         db.commit()
-    return {'simple_claims': simple_claims, 'complex_claims': complex_claims}
 
 
 # just some almost random logic here

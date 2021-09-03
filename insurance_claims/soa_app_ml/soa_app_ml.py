@@ -11,8 +11,9 @@ class App():
         calculated_claims_value = self._calculate_claims_value()
         classified_claims_value = self._classify_claims_value(calculated_claims_value)
         claims_info = self._get_claims_info(classified_claims_value)
-        predicted_claims_complexity = self._predicted_claims_complexity(claims_info)
-        claim_payouts = self._calculate_payments(predicted_claims_complexity)
+        classified_claims_complexity = self._predicted_claims_complexity(claims_info)
+        self._update_claims_complexity(classified_claims_complexity)
+        claim_payouts = self._calculate_payments(classified_claims_complexity)
         if save_dataset:
             self._save_claims(claim_payouts)
         return self.get_outputs(claim_payouts)
@@ -44,6 +45,11 @@ class App():
         response = requests.post(url, json=claims)
         classified_claims_complexity = response.json()
         return classified_claims_complexity
+
+    # Client to update claims by complexity
+    def _update_claims_complexity(self, classified_claims_complexity):
+        url = base_url + 'claim-request/update_claims_complexity'
+        requests.post(url, json=classified_claims_complexity)
 
     # Client to calculate payments
     def _calculate_payments(self, classified_claims_complexity):

@@ -8,6 +8,7 @@ from insurance_claims import fbp_app_data
 from insurance_claims import fbp_app_ml
 from insurance_claims.soa_app_min import soa_app_min
 from insurance_claims.soa_app_data import soa_app_data
+from insurance_claims.soa_app_ml import soa_app_ml
 
 directory_path = pathlib.Path(__file__).parent.resolve()
 training_artifacts_dir_path = directory_path.joinpath("fbp_app_ml/training_artifacts")
@@ -40,8 +41,8 @@ all_apps = {
     },
     "soa_app_ml": {
         "description": "SOA app that replaces app logic with an ML model, while producing the same output..",
-        "create_app": (lambda: soa_app_data.App()),
-        "can_collect_data": True
+        "create_app": (lambda: soa_app_ml.App()),
+        "can_collect_data": False
     }
 }
 
