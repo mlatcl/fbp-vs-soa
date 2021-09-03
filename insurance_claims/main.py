@@ -3,15 +3,13 @@ import random
 import pandas as pd
 import pathlib
 
-
-
 from insurance_claims import fbp_app_min
 from insurance_claims import fbp_app_data
 from insurance_claims import fbp_app_ml
+from insurance_claims.soa_app_min import soa_app_min
 
 directory_path = pathlib.Path(__file__).parent.resolve()
 training_artifacts_dir_path = directory_path.joinpath("fbp_app_ml/training_artifacts")
-
 
 all_apps = {
     "fbp_app_min": {
@@ -28,6 +26,11 @@ all_apps = {
         "description": "FBP app that replaces app logic with an ML model, while producing the same output.",
         "create_app": (lambda: fbp_app_ml.App(training_artifacts_dir_path)),
         "can_collect_data": False
+    },
+    "soa_app_min": {
+        "description": "SOA app that only provides basic functionality.",
+        "create_app": (lambda: soa_app_min.App()),
+        "can_collect_data": False
     }
 }
 
@@ -38,7 +41,6 @@ if len(sys.argv) != 2 or sys.argv[1] not in all_apps.keys():
     exit(1)
 
 app_data = all_apps[sys.argv[1]]
-
 
 random.seed(42)
 
@@ -51,7 +53,6 @@ n_claims_per_step = 5
 input_data_df = pd.read_csv(directory_path.joinpath("insurance_claims.csv"))
 input_data_df['claim_id'] = input_data_df.index
 input_data = input_data_df.to_dict(orient='records')
-
 
 total_amount_claimed = 0.0
 total_amount_paid = 0.0
