@@ -148,15 +148,18 @@ def calculate_payments(claims):
 # Save claims
 def save_claims(claims):
     db = get_db()
+    claim_ids = []
     for claim in claims:
-        sql = 'SELECT * FROM Claims WHERE claim_id = ?'
-        values = [claim['claim_id']]
-        cursor = db.execute(sql, values)
-        df = DataFrame(cursor.fetchall())
-        _write_data_to_csv("claim_complexity.csv", df)
+        claim_ids.append(claim['claim_id'])
+    sql = 'SELECT * FROM Claims WHERE claim_id IN (%s) ' % ("?," * len(claim_ids))[:-1]
+    cursor = db.execute(sql, claim_ids)
+    df = DataFrame(cursor.fetchall())
+    columns = [column[0] for column in cursor.description]
+    df.columns = columns
+    _write_data_to_csv("claim_complexity.csv", df)
 
 
-def _write_data_to_csv(self, filename, df):
+def _write_data_to_csv(filename, df):
     """
     Writes data from given pandas DataFrame to file
     Creates new file (with header) if it doesn't exist
