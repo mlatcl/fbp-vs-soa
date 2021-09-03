@@ -1,8 +1,7 @@
 from flask import (Blueprint, request, make_response, jsonify)
-from .data import claim
 from .predict import learning
 
-bp = Blueprint('predict', __name__, url_prefix='/predict-request')
+bp = Blueprint('learning', __name__, url_prefix='/predict-request')
 
 
 # Predict claims complexity API
