@@ -50,8 +50,7 @@ class App():
         if len(input_records) > 0:
             claims = []
             for record in input_records:
-                claim = record.to_dict()
-                claims.append(claim)
+                claims.append(record)
             url = base_url + 'claim-request/add_claims'
             response = requests.post(url, json=claims)
             # print(response.json())

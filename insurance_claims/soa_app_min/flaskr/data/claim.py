@@ -22,18 +22,15 @@ def create_claim(claim):
 
     sql = 'INSERT INTO Claims (months_as_customer,age,policy_number,policy_bind_date,policy_state,policy_csl,' \
           'policy_deductable,policy_annual_premium,umbrella_limit,insured_zip,insured_sex,insured_education_level,' \
-          'insured_occupation,insured_hobbies,insured_relationship,capital-gains,capital-loss,incident_date,' \
+          'insured_occupation,insured_hobbies,insured_relationship,capital_gains,capital_loss,incident_date,' \
           'incident_type,collision_type,incident_severity,authorities_contacted,incident_state,incident_city,' \
           'incident_location,incident_hour_of_the_day,number_of_vehicles_involved,property_damage,bodily_injuries,' \
           'witnesses,police_report_available,total_claim_amount,injury_claim,property_claim,vehicle_claim,auto_make,' \
-          'auto_model,auto_year,is_complex) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,' \
-          '?,?,?,?,-1,0) '
+          'auto_model,auto_year,claim_id,is_complex,state) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,' \
+          '?,?,?,?,?,?,?,?,?,?,?,?,?,?,-1,0) ON CONFLICT(claim_id) DO UPDATE SET state = 0'
     values = []
     for key, value in claim.items():
-        if key == 'policy_bind_data' or key == 'incident_date':
-            values.append(datetime.strptime(value, '%Y-%m-%d %H:%M:%S.%f'))
-        else:
-            values.append(key)
+        values.append(value)
     cursor = db.execute(sql, values)
     db.commit()
     return cursor.lastrowid
@@ -43,22 +40,24 @@ def create_claim(claim):
 def calculate_claims_value():
     res = []
     db = get_db()
-    sql = 'SELECT * FROM Claims WHERE state = 0'
+    sql = 'SELECT claim_id, total_claim_amount FROM Claims WHERE state = 0'
     cursor = db.execute(sql)
     for claim in cursor:
         value = (1.0+CLAIM_VALUE_PROCESSING_OVERHEAD_RATE) * claim['total_claim_amount']
-        claim_values = [{'claim_id' : claim['claim_id'], 'value' : value}]
+        claim_values = {'claim_id': claim['claim_id'], 'value': value}
         res.append(claim_values)
     return res
 
 
 # Classify claims by value
 def classify_claims_value(claims):
-    high_value_claim_ids = [claim['claim_id'] for claim in claims if claim['value'] >= HIGH_VALUE_CLAIM_THRESHOLD]
-    low_value_claim_ids = [claim['claim_id'] for claim in claims if claim['value'] < HIGH_VALUE_CLAIM_THRESHOLD]
-
-    high_value_claims = [c for c in claims if c["claim_id"] in high_value_claim_ids]
-    low_value_claims = [c for c in claims if c["claim_id"] in low_value_claim_ids]
+    high_value_claims = []
+    low_value_claims = []
+    for claim in claims:
+        if claim['value'] >= HIGH_VALUE_CLAIM_THRESHOLD:
+            high_value_claims.append(claim)
+        else:
+            low_value_claims.append(claim)
 
     return {'high_value_claims': high_value_claims, 'low_value_claims': low_value_claims}
 
@@ -66,27 +65,40 @@ def classify_claims_value(claims):
 # Classify claims by complexity
 def classify_claims_complexity(claims):
     db = get_db()
-    complex_claims = claims['high_value_claims']
     simple_claims = []
+    complex_claims = []
     low_value_claims = claims['low_value_claims']
+    high_value_claims = claims['high_value_claims']
     for low_value_claim in low_value_claims:
-        sql = 'SELECT * FROM Claims WHERE claim_id = ?'
+        sql = 'SELECT claim_id, total_claim_amount, auto_year, witnesses, police_report_available FROM Claims ' \
+              'WHERE claim_id = ?'
         values = [low_value_claim['claim_id']]
         cursor = db.execute(sql,values)
         for claim in cursor:
+            c = {'claim_id':claim['claim_id'], 'total_claim_amount': claim['total_claim_amount']}
             if is_claim_complex(claim):
-                complex_claims.append(claim)
+                complex_claims.append(c)
             else:
-                simple_claims.append(claim)
+                simple_claims.append(c)
+
+    for high_value_claim in high_value_claims:
+        sql = 'SELECT claim_id, total_claim_amount, auto_year, witnesses FROM Claims WHERE claim_id = ?'
+        values = [high_value_claim['claim_id']]
+        cursor = db.execute(sql, values)
+        for claim in cursor:
+            c = {'claim_id': claim['claim_id'], 'total_claim_amount': claim['total_claim_amount']}
+            complex_claims.append(c)
 
     for claim in simple_claims:
         sql = 'UPDATE Claims SET is_complex = 0 WHERE claim_id = ?'
         values = [claim['claim_id']]
         db.execute(sql, values)
+        db.commit()
     for claim in complex_claims:
         sql = 'UPDATE Claims SET is_complex = 1 WHERE claim_id = ?'
         values = [claim['claim_id']]
         db.execute(sql, values)
+        db.commit()
     return {'simple_claims': simple_claims, 'complex_claims': complex_claims}
 
 
@@ -127,4 +139,5 @@ def calculate_payments(claims):
         sql = 'UPDATE Claims SET state = 1 WHERE claim_id = ?'
         values = [claim['claim_id']]
         db.execute(sql, values)
+        db.commit()
     return res
