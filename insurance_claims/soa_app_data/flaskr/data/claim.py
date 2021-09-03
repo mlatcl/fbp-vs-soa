@@ -29,7 +29,7 @@ def create_claim(claim):
           'incident_location,incident_hour_of_the_day,number_of_vehicles_involved,property_damage,bodily_injuries,' \
           'witnesses,police_report_available,total_claim_amount,injury_claim,property_claim,vehicle_claim,auto_make,' \
           'auto_model,auto_year,claim_id,is_complex,state) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,' \
-          '?,?,?,?,?,?,?,?,?,?,?,?,?,?,-1,0) ON CONFLICT(claim_id) DO UPDATE SET state = 0'
+          '?,?,?,?,?,?,?,?,?,?,?,?,?,?,"NONE",0) ON CONFLICT(claim_id) DO UPDATE SET state = 0'
     values = []
     for key, value in claim.items():
         values.append(value)
@@ -92,12 +92,12 @@ def classify_claims_complexity(claims):
             complex_claims.append(c)
 
     for claim in simple_claims:
-        sql = 'UPDATE Claims SET is_complex = 0 WHERE claim_id = ?'
+        sql = 'UPDATE Claims SET is_complex = "FALSE" WHERE claim_id = ?'
         values = [claim['claim_id']]
         db.execute(sql, values)
         db.commit()
     for claim in complex_claims:
-        sql = 'UPDATE Claims SET is_complex = 1 WHERE claim_id = ?'
+        sql = 'UPDATE Claims SET is_complex = "TRUE" WHERE claim_id = ?'
         values = [claim['claim_id']]
         db.execute(sql, values)
         db.commit()
@@ -154,8 +154,9 @@ def save_claims(claims):
     sql = 'SELECT * FROM Claims WHERE claim_id IN (%s) ' % ("?," * len(claim_ids))[:-1]
     cursor = db.execute(sql, claim_ids)
     df = DataFrame(cursor.fetchall())
-    columns = [column[0] for column in cursor.description]
-    df.columns = columns
+    cols = [column[0] for column in cursor.description]
+    df.columns = cols
+    df = df.drop(columns=['state'])
     _write_data_to_csv("claim_complexity.csv", df)
 
 
