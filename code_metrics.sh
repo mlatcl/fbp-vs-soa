@@ -134,31 +134,37 @@ function print-soa-metrics() {
 
 if [ -z "$1" ]
 then
-    # filename not provided, print metrics to the screen
-    print-fbp-metrics fbp_app_min
-    echo -e "\n"
-    print-fbp-metrics fbp_app_data
-    echo -e "\n"
-    print-fbp-metrics fbp_app_ml
-    echo -e "\n"
+    for application in insurance_claims mblogger ride_allocation
+    do
+        # filename not provided, print metrics to the screen
+        print-fbp-metrics $application/fbp_app_min
+        echo -e "\n"
+        print-fbp-metrics $application/fbp_app_data
+        echo -e "\n"
+        print-fbp-metrics $application/fbp_app_ml
+        echo -e "\n"
 
-    echo -e "\n"
-    print-soa-metrics soa_app_min
-    echo -e "\n"
-    print-soa-metrics soa_app_data
-    echo -e "\n"
-    print-soa-metrics soa_app_ml
+        echo -e "\n"
+        print-soa-metrics $application/soa_app_min
+        echo -e "\n"
+        print-soa-metrics $application/soa_app_data
+        echo -e "\n"
+        print-soa-metrics $application/soa_app_ml
+    done
     
     exit 0
 else
     # filename provided, write metrics to this file
     echo -n "" > $1
     write-csv-header $1
-    write-metrics-to-csv fbp_app_min $1
-    write-metrics-to-csv fbp_app_data $1
-    write-metrics-to-csv fbp_app_ml $1
-    write-metrics-to-csv soa_app_min $1
-    write-metrics-to-csv soa_app_data $1
-    write-metrics-to-csv soa_app_ml $1
+    for application in insurance_claims mblogger ride_allocation
+    do
+        write-metrics-to-csv $application/fbp_app_min $1
+        write-metrics-to-csv $application/fbp_app_data $1
+        write-metrics-to-csv $application/fbp_app_ml $1
+        write-metrics-to-csv $application/soa_app_min $1
+        write-metrics-to-csv $application/soa_app_data $1
+        write-metrics-to-csv $application/soa_app_ml $1
+    done
     exit 0
 fi
