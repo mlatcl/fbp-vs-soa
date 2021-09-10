@@ -10,7 +10,7 @@ function write-csv-header() {
     # notice order of metrics
     # each function that writes lines to this file has to follow that order
     filename=$1
-    echo "App Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity" >> $filename
+    echo "App,Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity, Cohesion" >> $filename
 }
 
 function average() {
@@ -19,69 +19,86 @@ function average() {
 }
 
 function write-metrics-to-csv() {
-    key=$1
-    filename=$2
+    app=$1
+    key=$2
+    filename=$3
     paradigm=$(echo $key | cut -c1-3) # fbp or soa
+    echo -n "$app," >> $filename
     echo -n "$key," >> $filename
-    $paradigm-lloc $key | extract-number | xargs echo -n >> $filename
+    $paradigm-lloc $app $key | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-halstead-metric $key 'volume' | extract-number | xargs echo -n >> $filename
+    $paradigm-halstead-metric $app $key 'volume' | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-halstead-metric $key 'difficulty' | extract-number | xargs echo -n >> $filename
+    $paradigm-halstead-metric $app $key 'difficulty' | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-halstead-metric $key 'effort' | extract-number | xargs echo -n >> $filename
+    $paradigm-halstead-metric $app $key 'effort' | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-maintainability-index $1 | extract-number | xargs echo -n >> $filename
+    $paradigm-maintainability-index $app $key | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-cyclomatic-complexity $1 | extract-number | xargs echo -n >> $filename
+    $paradigm-cyclomatic-complexity $app $key | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-cognitive-complexity $1 | extract-number | xargs echo >> $filename
+    $paradigm-cognitive-complexity $app $key | extract-number | xargs echo >> $filename
+    echo -n ',' >> $filename
+    $paradigm-cohesion $app $key | extract-number | xargs echo >> $filename
 }
 
 ################ FBP ################
 # each FBP app is in a single file, so we just analyze that file
 
 function fbp-lloc() {
-    key=$1
-    radon raw $key/$key.py | grep "LLOC"
+    app=$1
+    key=$2
+    radon raw $app/$key/$key.py | grep "LLOC"
 }
 
 function fbp-halstead-metric() {
-    key=$1
-    metric=$2
-    radon hal $key/$key.py | grep $metric
+    app=$1
+    key=$2
+    metric=$3
+    radon hal $app/$key/$key.py | grep $metric
 }
 
 function fbp-maintainability-index() {
-    key=$1
-    radon mi -s $key/$key.py
+    app=$1
+    key=$2
+    radon mi -s $app/$key/$key.py
 }
 
 function fbp-cyclomatic-complexity() {
-    key=$1
-    radon cc -as $key/$key.py | grep Average
+    app=$1
+    key=$2
+    radon cc -as $app/$key/$key.py | grep Average
 }
 
 function fbp-cognitive-complexity() {
-    key=$1
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 $key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
+    app=$1
+    key=$2
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
+}
+
+function fbp-cohesion() {
+    app=$1
+    key=$2
+    flake8 --select=H601 $app/$key  | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
 }
 
 function print-fbp-metrics() {
     echo "######### Collecting metrics for app $1 #########"
     echo -e "\nLogical lines of code"
-    fbp-lloc $1
+    fbp-lloc $1 $2
     echo -e "\nHalstead complexity metrics"
-    fbp-halstead-metric $1 'volume'
-    fbp-halstead-metric $1 'difficulty'
-    fbp-halstead-metric $1 'effort'
+    fbp-halstead-metric $1 $2 'volume'
+    fbp-halstead-metric $1 $2 'difficulty'
+    fbp-halstead-metric $1 $2 'effort'
     #radon hal $1/$1.py | grep 'volume\|difficulty\|effort'
     echo -e "\nMaintainability Index"
-    fbp-maintainability-index $1
+    fbp-maintainability-index $1 $2
     echo -e "\nCyclomatic Complexity"
-    fbp-cyclomatic-complexity $1
+    fbp-cyclomatic-complexity $1 $2
     echo -e "\nAverage Cognitive Complexity"
-    fbp-cognitive-complexity $1
+    fbp-cognitive-complexity $1 $2
+    echo -e "\nAverage Cohesion"
+    fbp-cohesion $1 $2
     echo "######### ############################## #########"
 }
 
@@ -90,45 +107,58 @@ function print-fbp-metrics() {
 # radon cannot handle such filtering logic, so we use find, cat all files together, and pipe that stdin stream to radon
 
 function soa-lloc() {
-    key=$1
-    find $key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon raw - | grep "LLOC"
+    app=$1
+    key=$2
+    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon raw - | grep "LLOC"
 }
 
 function soa-halstead-metric() {
-    key=$1
-    metric=$2
-    find $key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon hal - | grep $metric
+    app=$1
+    key=$2
+    metric=$3
+    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon hal - | grep $metric
 }
 
 function soa-maintainability-index() {
-    key=$1
-    find $key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon mi -s -
+    app=$1
+    key=$2
+    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon mi -s -
 }
 
 function soa-cyclomatic-complexity() {
-    key=$1
-    find $key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon cc -as - | grep Average
+    app=$1
+    key=$2
+    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon cc -as - | grep Average
 }
 
 function soa-cognitive-complexity() {
-    key=$1
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude "*/data/*,soa_model_training.py" $key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
+    app=$1
+    key=$2
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude '*/data/* */training_artifacts/* soa_model_training.py' $app/$key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
+}
+
+function soa-cohesion() {
+    app=$1
+    key=$2
+    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | flake8 --select=H601 - | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
 }
 
 function print-soa-metrics() {
     echo "######### Collecting metrics for app $1 #########"
     echo -e "\nLogical lines of code"
-    soa-lloc $1
+    soa-lloc $1 $2
     echo -e "\nHalstead complexity metrics"
-    soa-halstead-metric $1 'volume'
-    soa-halstead-metric $1 'difficulty'
-    soa-halstead-metric $1 'effort'
+    soa-halstead-metric $1 $2 'volume'
+    soa-halstead-metric $1 $2 'difficulty'
+    soa-halstead-metric $1 $2 'effort'
     echo -e "\nMaintainability Index"
-    soa-maintainability-index $1
+    soa-maintainability-index $1 $2
     echo -e "\nAverage Cyclomatic Complexity"
-    soa-cyclomatic-complexity $1
+    soa-cyclomatic-complexity $1 $2
     echo -e "\nAverage Cognitive Complexity"
-    soa-cognitive-complexity $1
+    soa-cognitive-complexity $1 $2
+    echo -e "\nAverage Cohesion"
+    soa-cohesion $1 $2
     echo "######### ############################## #########"
 }
 
@@ -137,19 +167,19 @@ then
     for application in insurance_claims mblogger ride_allocation
     do
         # filename not provided, print metrics to the screen
-        print-fbp-metrics $application/fbp_app_min
+        print-fbp-metrics $application fbp_app_min
         echo -e "\n"
-        print-fbp-metrics $application/fbp_app_data
+        print-fbp-metrics $application fbp_app_data
         echo -e "\n"
-        print-fbp-metrics $application/fbp_app_ml
+        print-fbp-metrics $application fbp_app_ml
         echo -e "\n"
 
         echo -e "\n"
-        print-soa-metrics $application/soa_app_min
+        print-soa-metrics $application soa_app_min
         echo -e "\n"
-        print-soa-metrics $application/soa_app_data
+        print-soa-metrics $application soa_app_data
         echo -e "\n"
-        print-soa-metrics $application/soa_app_ml
+        print-soa-metrics $application soa_app_ml
     done
     
     exit 0
@@ -159,12 +189,12 @@ else
     write-csv-header $1
     for application in insurance_claims mblogger ride_allocation
     do
-        write-metrics-to-csv $application/fbp_app_min $1
-        write-metrics-to-csv $application/fbp_app_data $1
-        write-metrics-to-csv $application/fbp_app_ml $1
-        write-metrics-to-csv $application/soa_app_min $1
-        write-metrics-to-csv $application/soa_app_data $1
-        write-metrics-to-csv $application/soa_app_ml $1
+        write-metrics-to-csv $application fbp_app_min $1
+        write-metrics-to-csv $application fbp_app_data $1
+        write-metrics-to-csv $application fbp_app_ml $1
+        write-metrics-to-csv $application soa_app_min $1
+        write-metrics-to-csv $application soa_app_data $1
+        write-metrics-to-csv $application soa_app_ml $1
     done
     exit 0
 fi

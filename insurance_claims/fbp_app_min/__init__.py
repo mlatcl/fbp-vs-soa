@@ -1,1 +1,1 @@
-from .app import App
+from .fbp_app_min import App

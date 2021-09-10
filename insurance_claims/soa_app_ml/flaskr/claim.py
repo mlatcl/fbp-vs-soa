@@ -78,4 +78,3 @@ def save_claims():
     res = claim.save_claims(req)
     res = make_response(jsonify(res), 200)
     return res
-
