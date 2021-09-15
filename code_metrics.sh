@@ -10,7 +10,7 @@ function write-csv-header() {
     # notice order of metrics
     # each function that writes lines to this file has to follow that order
     filename=$1
-    echo "App,Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity,Cohesion" >> $filename
+    echo "App,Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity,Cohesion,Words" >> $filename
 }
 
 function average() {
@@ -39,7 +39,9 @@ function write-metrics-to-csv() {
     echo -n ',' >> $filename
     $paradigm-cognitive-complexity $app $key | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-cohesion $app $key | extract-number | xargs echo >> $filename
+    $paradigm-cohesion $app $key | extract-number | xargs echo -n >> $filename
+    echo -n ',' >> $filename
+    $paradigm-words $app $key | extract-number | xargs echo >> $filename
 }
 
 ################ FBP ################
@@ -82,6 +84,12 @@ function fbp-cohesion() {
     flake8 --select=H601 $app/$key  | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
 }
 
+function fbp-words() {
+    app=$1
+    key=$2
+    wdiff -s $app/$key/$key.py $app/$key/$key.py | grep -o -E "$app/$key/$key.py: [0-9]+" | grep -o -E '[0-9]+' | average
+}
+
 function print-fbp-metrics() {
     echo "######### Collecting metrics for app $1 #########"
     echo -e "\nLogical lines of code"
@@ -99,6 +107,8 @@ function print-fbp-metrics() {
     fbp-cognitive-complexity $1 $2
     echo -e "\nAverage Cohesion"
     fbp-cohesion $1 $2
+    echo -e "\nNumber of Words"
+    fbp-words $1 $2
     echo "######### ############################## #########"
 }
 
@@ -143,6 +153,14 @@ function soa-cohesion() {
     find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | flake8 --select=H601 - | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
 }
 
+function soa-words() {
+    app=$1
+    key=$2
+    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'temp.py' -a -not -name 'soa_model_training.py' -exec cat {} \; > $app/$key/temp.py
+    wdiff -s $app/$key/temp.py $app/$key/temp.py | grep -o -E "$app/$key/temp.py: [0-9]+" | grep -o -E '[0-9]+' | average
+    rm $app/$key/temp.py
+}
+
 function print-soa-metrics() {
     echo "######### Collecting metrics for app $1 #########"
     echo -e "\nLogical lines of code"
@@ -159,6 +177,8 @@ function print-soa-metrics() {
     soa-cognitive-complexity $1 $2
     echo -e "\nAverage Cohesion"
     soa-cohesion $1 $2
+    echo -e "\nNumber of Words"
+    soa-words $1 $2
     echo "######### ############################## #########"
 }
 
@@ -166,7 +186,7 @@ if [ -z "$1" ]
 then
     for application in insurance_claims mblogger ride_allocation
     do
-        # filename not provided, print metrics to the screen
+        filename not provided, print metrics to the screen
         print-fbp-metrics $application fbp_app_min
         echo -e "\n"
         print-fbp-metrics $application fbp_app_data
