@@ -1,4 +1,4 @@
-App,Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity,Cohesion,Words
+App,Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity,Cohesion,Number of Words
 insurance_claims,fbp_app_min,210,543.6586766532571,6.2105263157894735,3376.406518162333,43.30,1.934782608695652,0.424242,29.6154,846
 insurance_claims,fbp_app_data,239,610.4242316685962,6.190476190476191,3778.816672234167,40.80,2.125,0.657143,29.4869,974
 insurance_claims,fbp_app_ml,263,543.6586766532571,6.848214285714286,3723.0911160093588,41.85,2.2941176470588234,0.918919,29.3954,1124
