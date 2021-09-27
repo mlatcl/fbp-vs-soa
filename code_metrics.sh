@@ -186,7 +186,7 @@ if [ -z "$1" ]
 then
     for application in insurance_claims mblogger ride_allocation
     do
-        filename not provided, print metrics to the screen
+        # filename not provided, print metrics to the screen
         print-fbp-metrics $application fbp_app_min
         echo -e "\n"
         print-fbp-metrics $application fbp_app_data

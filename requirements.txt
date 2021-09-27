@@ -11,6 +11,7 @@ radon>=4.5.0
 flake8>=3.9.1
 flake8-cognitive-complexity>=0.1.0
 cognitive-complexity>=1.2.0
+cohesion>=1.0.0
 
 # Flask Framework
 click==7.1.2
