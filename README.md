@@ -1,6 +1,6 @@
 This repo contains code for comparison flow-based programming (FBP) and software services (SOA) in the context of machine learning deployment.
 
-The repository contains six implementations of Ride Allocation app, which allocates taxi drivers to incoming taxi ride requests. These implementations represent the same software at different stages of development using one of the aforementioned paradigms. Here is the complete list:
+This branch of the repository contains six implementations of Ride Allocation app, which allocates taxi drivers to incoming taxi ride requests. These implementations represent the same software at different stages of development using one of the aforementioned paradigms. Here is the complete list:
 
 * [fbp_app_min](fbp_app_min/) - basic functionality implemented with FBP
 * [fbp_app_data](fbp_app_data/) - same as above, plus dataset collection for wait time estimation
@@ -35,3 +35,10 @@ To output metrics data in the console:
 To write metrics data to a file in CSV format:
 
     ./code_metrics.sh <filename>
+
+### Ride Allocation app
+At the highest level our implementation consists of two parts: the allocation system itself and the code that simulates events happening in the outside world.
+
+The allocation system provides several functions. First, it assigns taxi drivers to incoming ride requests. Second, it keeps track of all allocated rides and updates them according to the incoming events. We recognize several types of events: ride starts, ride finishes, location updates, cancellations. Third, it calculates factual wait times for passengers, defined as a difference between the moment a ride was allocated and the passenger’s pickup.
+
+The simulation part is implemented as a discrete-event simulation and is responsible for generating events that would be happening if our system was deployed as a part of a real life taxi application. In addition to creating initial data like a list of available drivers, it generates new ride requests and events for rides that were previously allocated.
