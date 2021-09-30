@@ -10,7 +10,7 @@ function write-csv-header() {
     # notice order of metrics
     # each function that writes lines to this file has to follow that order
     filename=$1
-    echo "App,Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity,Cohesion,Number of Words" >> $filename
+    echo "App,Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity,Number of Words" >> $filename
 }
 
 function average() {
@@ -39,8 +39,8 @@ function write-metrics-to-csv() {
     echo -n ',' >> $filename
     $paradigm-cognitive-complexity $app $key | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-cohesion $app $key | extract-number | xargs echo -n >> $filename
-    echo -n ',' >> $filename
+    #$paradigm-cohesion $app $key | extract-number | xargs echo -n >> $filename
+    #echo -n ',' >> $filename
     $paradigm-words $app $key | extract-number | xargs echo >> $filename
 }
 
