@@ -119,44 +119,44 @@ function print-fbp-metrics() {
 function soa-lloc() {
     app=$1
     key=$2
-    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon raw - | grep "LLOC"
+    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon raw - | grep "LLOC"
 }
 
 function soa-halstead-metric() {
     app=$1
     key=$2
     metric=$3
-    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon hal - | grep $metric
+    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon hal - | grep $metric
 }
 
 function soa-maintainability-index() {
     app=$1
     key=$2
-    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon mi -s -
+    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon mi -s -
 }
 
 function soa-cyclomatic-complexity() {
     app=$1
     key=$2
-    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon cc -as - | grep Average
+    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -exec cat {} \; | radon cc -as - | grep Average
 }
 
 function soa-cognitive-complexity() {
     app=$1
     key=$2
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude '*/data/* */training_artifacts/* soa_model_training.py' $app/$key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude 'schema.sql */training_artifacts/* soa_model_training.py' $app/$key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
 }
 
 function soa-cohesion() {
     app=$1
     key=$2
-    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'soa_model_training.py' -exec cat {} \; | flake8 --select=H601 - | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
+    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -exec cat {} \; | flake8 --select=H601 - | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
 }
 
 function soa-words() {
     app=$1
     key=$2
-    find $app/$key -iname '*.py' -a -not -path '*/data/*' -a -not -name 'temp.py' -a -not -name 'soa_model_training.py' -exec cat {} \; > $app/$key/temp.py
+    find $app/$key -iname '*.py' -a -not -name 'temp.py' -a -not -name 'soa_model_training.py' -exec cat {} \; > $app/$key/temp.py
     wdiff -s $app/$key/temp.py $app/$key/temp.py | grep -o -E "$app/$key/temp.py: [0-9]+" | grep -o -E '[0-9]+' | average
     rm $app/$key/temp.py
 }
