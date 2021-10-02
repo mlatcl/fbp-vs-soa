@@ -75,13 +75,13 @@ function fbp-cyclomatic-complexity() {
 function fbp-cognitive-complexity() {
     app=$1
     key=$2
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key/$key.py| grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
 }
 
 function fbp-cohesion() {
     app=$1
     key=$2
-    flake8 --select=H601 $app/$key  | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
+    flake8 --select=H601 $app/$key/$key.py  | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
 }
 
 function fbp-words() {
@@ -113,7 +113,7 @@ function print-fbp-metrics() {
 }
 
 ################ SOA ################
-# each SOA app consists of multiple files. Concretely we analyze main file and all files inside "flaskr" folder, but excluding data access layer which goes inside "data" folder
+# each SOA app consists of multiple files. Concretely we analyze main file and all files inside "flaskr" folder
 # radon cannot handle such filtering logic, so we use find, cat all files together, and pipe that stdin stream to radon
 
 function soa-lloc() {
