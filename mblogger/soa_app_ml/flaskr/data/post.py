@@ -1,10 +1,7 @@
 from .db import get_db
 from datetime import datetime
 import random
-import itertools as it
-
-POST_START_WORD = "^"
-PERSONAL_WORDS_WEIGHT = 10.0
+from .text_generator import TextGenerator
 
 
 # Creates a new post
@@ -61,57 +58,31 @@ def get_generated_posts():
 def generate_post(req):
     user_id = req['user_id']
     length = req['length']
+
     db = get_db()
+    sql = 'SELECT first_word FROM Bigrams'
+    cursor = db.execute(sql)
+    bigram_weights = []
+    for row in cursor:
+        bigram = {'first_word': row['first_word'], 'second_word': row['second_word'], 'weight': row['weight']}
+        bigram_weights.append(bigram)
+    text_generator = TextGenerator(bigram_weights)
+
     sql = 'SELECT * FROM PersonalDictionaries WHERE user_id = ?'
     values = [user_id]
     cursor = db.execute(sql, values)
     personal_words = []
-    for word in cursor:
-        personal_words.append(word['word'])
-
-    sql = 'SELECT first_word FROM Bigrams'
-    cursor1 = db.execute(sql)
-    bigrams_dict = {}
-    bigram_weights_dict = {}
-    for row1 in cursor1:
-        first_word = row1['first_word']
-        sql = 'SELECT second_word, weight FROM Bigrams WHERE first_word = ?'
-        values = [first_word]
-        cursor2 = db.execute(sql, values)
-        words = []
-        for row2 in cursor2:
-            words.append(row2['second_word'])
-            bigram_weights_dict[first_word,row2['second_word']] = row2['weight']
-        bigrams_dict[first_word] = words
-
-    if len(personal_words) > 0 or len(personal_words) == 0:
-        text = " ".join(it.islice(_word_generator(personal_words,bigrams_dict,bigram_weights_dict), length))
-        if len(text) > 0:
-            sql = 'INSERT INTO Posts (post_id, user_id, text, type, time_stamp) VALUES (?,?,?,1,?) ' \
-                'ON CONFLICT(post_id) DO UPDATE SET text = ?'
-            values = [random.getrandbits(8), user_id, text, datetime.strptime(str(datetime.now()), '%Y-%m-%d %H:%M:%S.%f'), text]
-            cursor = db.execute(sql, values)
-            db.commit()
-            return cursor.lastrowid
-        else:
-            return 0
+    for row in cursor:
+        personal_words.append(row['word'])
+    text = text_generator.generate(personal_words, length)
+    if len(text) > 0:
+        sql = 'INSERT INTO Posts (post_id, user_id, text, type, time_stamp) VALUES (?,?,?,1,?) ' \
+              'ON CONFLICT(post_id) DO UPDATE SET text = ?'
+        values = [random.getrandbits(8), user_id, text, datetime.strptime(str(datetime.now()), '%Y-%m-%d %H:%M:%S.%f'),
+                  text]
+        cursor = db.execute(sql, values)
+        db.commit()
+        return cursor.lastrowid
     else:
         return 0
 
-
-# Word generator
-def _word_generator(personal_words, bigrams_dict, bigram_weights_dict):
-    current_word = POST_START_WORD
-    while True:
-        next_words = list(bigrams_dict.get(current_word, []))
-        next_weights = [
-            (PERSONAL_WORDS_WEIGHT if next_word in personal_words else 1.0)
-            * bigram_weights_dict[current_word, next_word]
-            for next_word in next_words
-        ]
-        if not next_words:
-            return
-
-        next_word = random.choices(next_words, weights=next_weights)[0]
-        current_word = next_word
-        yield current_word
