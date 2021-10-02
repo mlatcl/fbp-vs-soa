@@ -6,6 +6,7 @@ import itertools as it
 
 from flowpipe import Graph, INode, Node, InputPlug, OutputPlug
 from mblogger.record_types import *
+from .text_generator import TextGenerator
 
 POST_START_WORD = "^"
 PERSONAL_WORDS_WEIGHT = 10.0
@@ -267,7 +268,7 @@ class FindBigrams(INode):
         for post in posts:
             words = post.text.split(" ")
             words = [word for word in words if word]
-            for bigram in zip(["^", *words], words):
+            for bigram in zip([POST_START_WORD, *words], words):
                 bigrams.append(bigram)
         
         return {'new_bigrams': bigrams}
@@ -317,31 +318,23 @@ class GeneratedPosts(INode):
         bigrams_dict = {lhs: rhs for lhs, rhs in bigrams}
         bigram_weights_dict = {bigram: weight for bigram, weight in bigram_weights}
 
+        bigram_weights = [
+            BigramWithWeight(
+            first_word=b[0][0],
+            second_word=b[0][1],
+            weight=b[1],
+        ) for b in bigram_weights]
+
+        text_generator = TextGenerator(bigram_weights)
         generated_posts = []
         for input_record in generate_posts_input:
             user_id = input_record.user_id
             if user_id not in personal_dictionaries_dict:
                 # we don't have posts from this user yet, skip
                 continue
-            
-            def word_generator():
-                current_word = POST_START_WORD
-                personal_words = personal_dictionaries_dict[user_id]
-                while True:
-                    next_words = list(bigrams_dict.get(current_word, []))
-                    next_weights = [
-                        (PERSONAL_WORDS_WEIGHT if next_word in personal_words else 1.0)
-                        * bigram_weights_dict[current_word, next_word]
-                        for next_word in next_words
-                    ]
-                    if not next_words:
-                        return
 
-                    next_word = random.choices(next_words, weights=next_weights)[0]
-                    current_word = next_word
-                    yield current_word
-
-            text = " ".join(it.islice(word_generator(), input_record.length))
+            personal_words = personal_dictionaries_dict[user_id]
+            text = text_generator.generate(personal_words, input_record.length)
             post = Post(post_id=random.getrandbits(64), author_id=user_id, text=text, timestamp=datetime.now())
             generated_posts.append(post)
         

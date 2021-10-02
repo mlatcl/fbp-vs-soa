@@ -43,13 +43,18 @@ class Timeline:
     user_id: int
     posts: List[Post]
 
-
 @dataclass_json
 @dataclass
 class PersonalDictionary:
     user_id: int
     words: set
 
+@dataclass_json
+@dataclass
+class BigramWithWeight:
+    first_word: str
+    second_word: str
+    weight: int
 
 @dataclass_json
 @dataclass
