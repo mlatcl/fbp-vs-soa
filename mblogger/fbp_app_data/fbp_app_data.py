@@ -96,24 +96,13 @@ class NewBigramsStream(Stream):
         return {'new_bigrams': self.data}
 
 
-class BigramsStream(Stream):
-    def __init__(self, **kwargs):
-        super(BigramsStream, self).__init__(**kwargs)
-        InputPlug('bigrams', self)
-        OutputPlug('bigrams', self)
-
-    def compute(self, bigrams: List[Tuple]) -> Dict:
-        self.add_data(bigrams)
-        return {'bigrams': self.data}
-
-
 class BigramWeightsStream(Stream):
     def __init__(self, **kwargs):
         super(BigramWeightsStream, self).__init__(**kwargs)
         InputPlug('bigram_weights', self)
         OutputPlug('bigram_weights', self)
 
-    def compute(self, bigram_weights: List[Tuple]) -> Dict:
+    def compute(self, bigram_weights: List[BigramWithWeight]) -> Dict:
         self.add_data(bigram_weights)
         return {'bigram_weights': self.data}
 
@@ -253,7 +242,6 @@ class ProcessBigrams(INode):
     def __init__(self, **kwargs):
         super(ProcessBigrams, self).__init__(**kwargs)
         InputPlug('new_bigrams', self)
-        OutputPlug('bigrams', self)
         OutputPlug('bigram_weights', self)
 
     def compute(self, new_bigrams: List[Tuple]) -> Dict:
@@ -261,18 +249,18 @@ class ProcessBigrams(INode):
         bigram_weights_dict = {}
 
         for lhs, rhs in new_bigrams:
-            if lhs not in bigrams_dict:
-                bigrams_dict[lhs] = set()
-            bigrams_dict[lhs].add(rhs)
-
             if (lhs, rhs) not in bigram_weights_dict:
                 bigram_weights_dict[lhs, rhs] = 0
             bigram_weights_dict[lhs, rhs] += 1
 
-        bigrams = list(bigrams_dict.items())
-        bigram_weights = list(bigram_weights_dict.items())
+        bigram_weights = [
+            BigramWithWeight(
+                first_word=b[0],
+                second_word=b[1],
+                weight=bigram_weights_dict[b],
+            ) for b in bigram_weights_dict]
 
-        return {'bigrams': bigrams, 'bigram_weights': bigram_weights}
+        return {'bigram_weights': bigram_weights}
 
 
 class App():
@@ -316,7 +304,6 @@ class App():
 
         # inner streams
         new_bigrams_stream = NewBigramsStream(graph=graph)
-        bigrams_stream = BigramsStream(graph=graph)
         bigram_weights_stream = BigramWeightsStream(graph=graph)
         personal_dictionaries_stream = PersonalDictionaryStream(graph=graph)
 
@@ -355,7 +342,6 @@ class App():
         posts_stream.outputs["posts"] >> find_bigrams.inputs["posts"]
         find_bigrams.outputs["new_bigrams"] >> new_bigrams_stream.inputs["new_bigrams"]
         new_bigrams_stream.outputs["new_bigrams"] >> process_bigrams.inputs["new_bigrams"]
-        process_bigrams.outputs["bigrams"] >> bigrams_stream.inputs["bigrams"]
         process_bigrams.outputs["bigram_weights"] >> bigram_weights_stream.inputs["bigram_weights"]
 
         self.graph = graph

@@ -110,24 +110,13 @@ class NewBigramsStream(Stream):
         return {'new_bigrams': self.data}
 
 
-class BigramsStream(Stream):
-    def __init__(self, **kwargs):
-        super(BigramsStream, self).__init__(**kwargs)
-        InputPlug('bigrams', self)
-        OutputPlug('bigrams', self)
-
-    def compute(self, bigrams: List[Tuple]) -> Dict:
-        self.add_data(bigrams)
-        return {'bigrams': self.data}
-
-
 class BigramWeightsStream(Stream):
     def __init__(self, **kwargs):
         super(BigramWeightsStream, self).__init__(**kwargs)
         InputPlug('bigram_weights', self)
         OutputPlug('bigram_weights', self)
 
-    def compute(self, bigram_weights: List[Tuple]) -> Dict:
+    def compute(self, bigram_weights: List[BigramWithWeight]) -> Dict:
         self.add_data(bigram_weights)
         return {'bigram_weights': self.data}
 
@@ -278,7 +267,6 @@ class ProcessBigrams(INode):
     def __init__(self, **kwargs):
         super(ProcessBigrams, self).__init__(**kwargs)
         InputPlug('new_bigrams', self)
-        OutputPlug('bigrams', self)
         OutputPlug('bigram_weights', self)
 
     def compute(self, new_bigrams: List[Tuple]) -> Dict:
@@ -286,18 +274,18 @@ class ProcessBigrams(INode):
         bigram_weights_dict = {}
 
         for lhs, rhs in new_bigrams:
-            if lhs not in bigrams_dict:
-                bigrams_dict[lhs] = set()
-            bigrams_dict[lhs].add(rhs)
-
             if (lhs, rhs) not in bigram_weights_dict:
                 bigram_weights_dict[lhs, rhs] = 0
             bigram_weights_dict[lhs, rhs] += 1
 
-        bigrams = list(bigrams_dict.items())
-        bigram_weights = list(bigram_weights_dict.items())
+        bigram_weights = [
+            BigramWithWeight(
+                first_word=b[0],
+                second_word=b[1],
+                weight=bigram_weights_dict[b],
+            ) for b in bigram_weights_dict]
 
-        return {'bigrams': bigrams, 'bigram_weights': bigram_weights}
+        return {'bigram_weights': bigram_weights}
 
 
 class GeneratedPosts(INode):
@@ -305,25 +293,15 @@ class GeneratedPosts(INode):
         super(GeneratedPosts, self).__init__(**kwargs)
         InputPlug('generate_posts_input', self)
         InputPlug('personal_dictionaries', self)
-        InputPlug('bigrams', self)
         InputPlug('bigram_weights', self)
         OutputPlug('generated_posts', self)
 
     def compute(self,
                 generate_posts_input: List[GeneratePostInput],
                 personal_dictionaries: List[PersonalDictionary],
-                bigrams: List[Tuple], bigram_weights: List[Tuple]) -> Dict:
+                bigram_weights: List[BigramWithWeight]) -> Dict:
 
         personal_dictionaries_dict = {x.user_id: x.words for x in personal_dictionaries}
-        bigrams_dict = {lhs: rhs for lhs, rhs in bigrams}
-        bigram_weights_dict = {bigram: weight for bigram, weight in bigram_weights}
-
-        bigram_weights = [
-            BigramWithWeight(
-            first_word=b[0][0],
-            second_word=b[0][1],
-            weight=b[1],
-        ) for b in bigram_weights]
 
         text_generator = TextGenerator(bigram_weights)
         generated_posts = []
@@ -385,7 +363,6 @@ class App():
 
         # inner streams
         new_bigrams_stream = NewBigramsStream(graph=graph)
-        bigrams_stream = BigramsStream(graph=graph)
         bigram_weights_stream = BigramWeightsStream(graph=graph)
         personal_dictionaries_stream = PersonalDictionaryStream(graph=graph)
 
@@ -430,12 +407,10 @@ class App():
         posts_stream.outputs["posts"] >> find_bigrams.inputs["posts"]
         find_bigrams.outputs["new_bigrams"] >> new_bigrams_stream.inputs["new_bigrams"]
         new_bigrams_stream.outputs["new_bigrams"] >> process_bigrams.inputs["new_bigrams"]
-        process_bigrams.outputs["bigrams"] >> bigrams_stream.inputs["bigrams"]
         process_bigrams.outputs["bigram_weights"] >> bigram_weights_stream.inputs["bigram_weights"]
 
         generate_posts_input_stream.outputs["generate_posts_input"] >> generate_posts.inputs["generate_posts_input"]
         personal_dictionaries_stream.outputs["personal_dictionaries"] >> generate_posts.inputs["personal_dictionaries"]
-        bigrams_stream.outputs["bigrams"] >> generate_posts.inputs["bigrams"]
         bigram_weights_stream.outputs["bigram_weights"] >> generate_posts.inputs["bigram_weights"]
         generate_posts.outputs["generated_posts"] >> generated_posts_stream.inputs["generated_posts"]
 
