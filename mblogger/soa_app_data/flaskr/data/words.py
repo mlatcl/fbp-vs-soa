@@ -3,7 +3,7 @@ from .db import get_db
 POST_START_WORD = "^"
 
 
-# Registers a new follow in the database
+# Identify bigrams in post and save them in db
 def update_bigrams(post):
     db = get_db()
     text = post['text']
@@ -17,7 +17,7 @@ def update_bigrams(post):
         db.commit()
 
 
-# Get list of followers for an author
+# Add words used in a post to the post author's dictionary
 def update_personal_directory(post):
     db = get_db()
     user_id = post['author_id']
