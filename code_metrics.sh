@@ -20,12 +20,12 @@ function average() {
 
 function median() {
     # computes median of the list of numbers, one number per line
-    sort -n $1  |  awk '{all[NR] = $1} END{print all[int(NR*0.5 - 0.5)]}'
+    sort -n $1 |  awk '{all[NR] = $1} END{print all[int(NR*0.50 - 0.50)]}'
 }
 
 function percentile() {
     # computes 90th percentile of the list of numbers, one number per line
-    sort -n $1  |  awk '{all[NR] = $0} END{print all[int(NR*0.90 - 0.10)]}'
+    sort -n $1  |  awk '{all[NR] = $1} END{print all[int(NR*0.90 - 0.10)]}'
 }
 
 function write-metrics-to-csv() {
@@ -85,13 +85,13 @@ function fbp-cyclomatic-complexity() {
 function fbp-cognitive-complexity() {
     app=$1
     key=$2
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key/$key.py| grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key/$key.py| grep -E -o '\(.*>' | grep -o -E '[0-9]+' | percentile
 }
 
 function fbp-cohesion() {
     app=$1
     key=$2
-    flake8 --select=H601 $app/$key/$key.py  | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
+    flake8 $app/$key/$key.py  | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | percentile
 }
 
 function fbp-words() {
@@ -154,13 +154,13 @@ function soa-cyclomatic-complexity() {
 function soa-cognitive-complexity() {
     app=$1
     key=$2
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude 'schema.sql */training_artifacts/* soa_model_training.py text_generator.py' $app/$key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | average
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude 'schema.sql */training_artifacts/* soa_model_training.py text_generator.py' $app/$key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | percentile
 }
 
 function soa-cohesion() {
     app=$1
     key=$2
-    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -a -not -name "text_generator.py" -exec cat {} \; | flake8 --select=H601 - | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | average
+    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -a -not -name "text_generator.py" -exec cat {} \; | flake8 --select=H601 - | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | percentile
 }
 
 function soa-words() {
