@@ -18,6 +18,16 @@ function average() {
     awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }'
 }
 
+function median() {
+    # computes median of the list of numbers, one number per line
+    sort -n $1  |  awk '{all[NR] = $1} END{print all[int(NR*0.5 - 0.5)]}'
+}
+
+function percentile() {
+    # computes 90th percentile of the list of numbers, one number per line
+    sort -n $1  |  awk '{all[NR] = $0} END{print all[int(NR*0.90 - 0.10)]}'
+}
+
 function write-metrics-to-csv() {
     app=$1
     key=$2
