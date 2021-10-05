@@ -23,15 +23,16 @@ function median() {
     sort -n $1 |  awk '{all[NR] = $1} END{print all[int(NR*0.50 - 0.50)]}'
 }
 
-function percentile() {
-    # computes 90th percentile of the list of numbers, one number per line
-    sort -n $1  |  awk '{all[NR] = $1} END{print all[int(NR*0.90 - 0.10)]}'
+function p99() {
+    # computes 99th percentile of the list of numbers, one number per line
+    sort -n $1  |  awk '{all[NR] = $1} END{print all[int(NR*0.99 - 0.50)]}'
 }
 
 function write-metrics-to-csv() {
     app=$1
     key=$2
     filename=$3
+    stat=$4
     paradigm=$(echo $key | cut -c1-3) # fbp or soa
     echo -n "$app," >> $filename
     echo -n "$key," >> $filename
@@ -45,11 +46,11 @@ function write-metrics-to-csv() {
     echo -n ',' >> $filename
     $paradigm-maintainability-index $app $key | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-cyclomatic-complexity $app $key | extract-number | xargs echo -n >> $filename
+    $paradigm-cyclomatic-complexity $app $key $stat | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-cognitive-complexity $app $key | extract-number | xargs echo -n >> $filename
+    $paradigm-cognitive-complexity $app $key $stat | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    #$paradigm-cohesion $app $key | extract-number | xargs echo -n >> $filename
+    #$paradigm-cohesion $app $key $stat | extract-number | xargs echo -n >> $filename
     #echo -n ',' >> $filename
     $paradigm-words $app $key | extract-number | xargs echo >> $filename
 }
@@ -79,25 +80,28 @@ function fbp-maintainability-index() {
 function fbp-cyclomatic-complexity() {
     app=$1
     key=$2
-    radon cc -as $app/$key/$key.py | grep -E -o '[M|C].*' | grep -E -o '\(*[0-9]+)' | grep -o -E '[0-9]+' | percentile
+    stat=$3
+    radon cc -as $app/$key/$key.py | grep -E -o '[M|C].*' | grep -E -o '\(*[0-9]+)' | grep -o -E '[0-9]+' | $stat
 }
 
 function fbp-cognitive-complexity() {
     app=$1
     key=$2
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key/$key.py | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | percentile
+    metric=$3
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key/$key.py | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | $stat
 }
 
 function fbp-cohesion() {
     app=$1
     key=$2
-    flake8 $app/$key/$key.py  | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | percentile
+    metric=$3
+    flake8 $app/$key/$key.py  | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | $stat
 }
 
 function fbp-words() {
     app=$1
     key=$2
-    wdiff -s $app/$key/$key.py $app/$key/$key.py | grep -o -E "$app/$key/$key.py: [0-9]+" | grep -o -E '[0-9]+' | average
+    wc -w $app/$key/$key.py | grep -o -E '[0-9]+'
 }
 
 function print-fbp-metrics() {
@@ -112,11 +116,11 @@ function print-fbp-metrics() {
     echo -e "\nMaintainability Index"
     fbp-maintainability-index $1 $2
     echo -e "\nCyclomatic Complexity"
-    fbp-cyclomatic-complexity $1 $2
+    fbp-cyclomatic-complexity $1 $2 $3
     echo -e "\nAverage Cognitive Complexity"
-    fbp-cognitive-complexity $1 $2
+    fbp-cognitive-complexity $1 $2 $3
     echo -e "\nAverage Cohesion"
-    fbp-cohesion $1 $2
+    fbp-cohesion $1 $2 $3
     echo -e "\nNumber of Words"
     fbp-words $1 $2
     echo "######### ############################## #########"
@@ -148,26 +152,29 @@ function soa-maintainability-index() {
 function soa-cyclomatic-complexity() {
     app=$1
     key=$2
-    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -a -not -name "text_generator.py" -exec cat {} \; | radon cc -as - | grep -E -o '[M|C].*' | grep -E -o '\(*[0-9]+)' | grep -o -E '[0-9]+' | percentile
+    stat=$3
+    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -a -not -name "text_generator.py" -exec cat {} \; | radon cc -as - | grep -E -o '[M|C].*' | grep -E -o '\(*[0-9]+)' | grep -o -E '[0-9]+' | $stat
 }
 
 function soa-cognitive-complexity() {
     app=$1
     key=$2
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude 'schema.sql */training_artifacts/* soa_model_training.py text_generator.py' $app/$key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | percentile
+    stat=$3
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 --exclude 'schema.sql */training_artifacts/* soa_model_training.py text_generator.py' $app/$key | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | $stat
 }
 
 function soa-cohesion() {
     app=$1
     key=$2
-    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -a -not -name "text_generator.py" -exec cat {} \; | flake8 --select=H601 - | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | percentile
+    stat=$3
+    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -a -not -name "text_generator.py" -exec cat {} \; | flake8 --select=H601 - | grep -E -o '\(.*' | grep -o -E '[0-9]+[.][0-9]+' | $stat
 }
 
 function soa-words() {
     app=$1
     key=$2
     find $app/$key -iname '*.py' -a -not -name 'temp.py' -a -not -name 'soa_model_training.py' -a -not -name "text_generator.py" -exec cat {} \; > $app/$key/temp.py
-    wdiff -s $app/$key/temp.py $app/$key/temp.py | grep -o -E "$app/$key/temp.py: [0-9]+" | grep -o -E '[0-9]+' | average
+    wc -w $app/$key/temp.py | grep -o -E '[0-9]+'
     rm $app/$key/temp.py
 }
 
@@ -182,11 +189,11 @@ function print-soa-metrics() {
     echo -e "\nMaintainability Index"
     soa-maintainability-index $1 $2
     echo -e "\nAverage Cyclomatic Complexity"
-    soa-cyclomatic-complexity $1 $2
+    soa-cyclomatic-complexity $1 $2 $3
     echo -e "\nAverage Cognitive Complexity"
-    soa-cognitive-complexity $1 $2
+    soa-cognitive-complexity $1 $2 $3
     echo -e "\nAverage Cohesion"
-    soa-cohesion $1 $2
+    soa-cohesion $1 $2 $3
     echo -e "\nNumber of Words"
     soa-words $1 $2
     echo "######### ############################## #########"
@@ -197,34 +204,41 @@ then
     for application in insurance_claims mblogger ride_allocation
     do
         # filename not provided, print metrics to the screen
-        print-fbp-metrics $application fbp_app_min
+        print-fbp-metrics $application fbp_app_min average
         echo -e "\n"
-        print-fbp-metrics $application fbp_app_data
+        print-fbp-metrics $application fbp_app_data average
         echo -e "\n"
-        print-fbp-metrics $application fbp_app_ml
+        print-fbp-metrics $application fbp_app_ml average
         echo -e "\n"
 
         echo -e "\n"
-        print-soa-metrics $application soa_app_min
+        print-soa-metrics $application soa_app_min average
         echo -e "\n"
-        print-soa-metrics $application soa_app_data
+        print-soa-metrics $application soa_app_data average
         echo -e "\n"
-        print-soa-metrics $application soa_app_ml
+        print-soa-metrics $application soa_app_ml average
     done
     
     exit 0
 else
+    if [ -z "$2" ]
+    then
+        stat=average
+    else
+        stat=$2
+    fi
+
     # filename provided, write metrics to this file
     echo -n "" > $1
     write-csv-header $1
     for application in insurance_claims mblogger ride_allocation
     do
-        write-metrics-to-csv $application fbp_app_min $1
-        write-metrics-to-csv $application fbp_app_data $1
-        write-metrics-to-csv $application fbp_app_ml $1
-        write-metrics-to-csv $application soa_app_min $1
-        write-metrics-to-csv $application soa_app_data $1
-        write-metrics-to-csv $application soa_app_ml $1
+        write-metrics-to-csv $application fbp_app_min $1 $stat
+        write-metrics-to-csv $application fbp_app_data $1 $stat
+        write-metrics-to-csv $application fbp_app_ml $1 $stat
+        write-metrics-to-csv $application soa_app_min $1 $stat
+        write-metrics-to-csv $application soa_app_data $1 $stat
+        write-metrics-to-csv $application soa_app_ml $1 $stat
     done
     exit 0
 fi
