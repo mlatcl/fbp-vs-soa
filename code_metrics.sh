@@ -10,7 +10,7 @@ function write-csv-header() {
     # notice order of metrics
     # each function that writes lines to this file has to follow that order
     filename=$1
-    echo "App,Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity,Cognitive Complexity,Number of Words" >> $filename
+    echo "App,Key,Logical Lines of Code,Halstead Volume,Halstead Difficulty,Halstead Effort,Maintainability Index,Cyclomatic Complexity avg,Cyclomatic Complexity p99,Cognitive Complexity avg,Cognitive Complexity p99,Number of Words" >> $filename
 }
 
 function average() {
@@ -32,7 +32,6 @@ function write-metrics-to-csv() {
     app=$1
     key=$2
     filename=$3
-    stat=$4
     paradigm=$(echo $key | cut -c1-3) # fbp or soa
     echo -n "$app," >> $filename
     echo -n "$key," >> $filename
@@ -46,11 +45,17 @@ function write-metrics-to-csv() {
     echo -n ',' >> $filename
     $paradigm-maintainability-index $app $key | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-cyclomatic-complexity $app $key $stat | extract-number | xargs echo -n >> $filename
+    $paradigm-cyclomatic-complexity $app $key average | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    $paradigm-cognitive-complexity $app $key $stat | extract-number | xargs echo -n >> $filename
+    $paradigm-cyclomatic-complexity $app $key p99 | extract-number | xargs echo -n >> $filename
     echo -n ',' >> $filename
-    #$paradigm-cohesion $app $key $stat | extract-number | xargs echo -n >> $filename
+    $paradigm-cognitive-complexity $app $key average | extract-number | xargs echo -n >> $filename
+    echo -n ',' >> $filename
+    $paradigm-cognitive-complexity $app $key p99 | extract-number | xargs echo -n >> $filename
+    echo -n ',' >> $filename
+    #$paradigm-cohesion $app $key average | extract-number | xargs echo -n >> $filename
+    #echo -n ',' >> $filename
+    #$paradigm-cohesion $app $key p99 | extract-number | xargs echo -n >> $filename
     #echo -n ',' >> $filename
     $paradigm-words $app $key | extract-number | xargs echo >> $filename
 }
@@ -87,7 +92,7 @@ function fbp-cyclomatic-complexity() {
 function fbp-cognitive-complexity() {
     app=$1
     key=$2
-    metric=$3
+    stat=$3
     flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key/$key.py | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | $stat
 }
 
@@ -115,12 +120,18 @@ function print-fbp-metrics() {
     #radon hal $1/$1.py | grep 'volume\|difficulty\|effort'
     echo -e "\nMaintainability Index"
     fbp-maintainability-index $1 $2
-    echo -e "\nCyclomatic Complexity"
-    fbp-cyclomatic-complexity $1 $2 $3
-    echo -e "\nAverage Cognitive Complexity"
-    fbp-cognitive-complexity $1 $2 $3
-    echo -e "\nAverage Cohesion"
-    fbp-cohesion $1 $2 $3
+    echo -e "\nCyclomatic Complexity average"
+    fbp-cyclomatic-complexity $1 $2 average
+    echo -e "\nCyclomatic Complexity p99"
+    fbp-cyclomatic-complexity $1 $2 p99
+    echo -e "\Cognitive Complexity average"
+    fbp-cognitive-complexity $1 $2 average
+    echo -e "\Cognitive Complexity p99"
+    fbp-cognitive-complexity $1 $2 p99
+    echo -e "\nCohesion Average"
+    fbp-cohesion $1 $2 average
+    echo -e "\nCohesion p99"
+    fbp-cohesion $1 $2 p99
     echo -e "\nNumber of Words"
     fbp-words $1 $2
     echo "######### ############################## #########"
@@ -188,12 +199,18 @@ function print-soa-metrics() {
     soa-halstead-metric $1 $2 'effort'
     echo -e "\nMaintainability Index"
     soa-maintainability-index $1 $2
-    echo -e "\nAverage Cyclomatic Complexity"
-    soa-cyclomatic-complexity $1 $2 $3
-    echo -e "\nAverage Cognitive Complexity"
-    soa-cognitive-complexity $1 $2 $3
-    echo -e "\nAverage Cohesion"
-    soa-cohesion $1 $2 $3
+    echo -e "\nCyclomatic Complexity average"
+    soa-cyclomatic-complexity $1 $2 average
+    echo -e "\nCyclomatic Complexity p99"
+    soa-cyclomatic-complexity $1 $2 p99
+    echo -e "\nCognitive Complexity average"
+    soa-cognitive-complexity $1 $2 average
+    echo -e "\nCognitive Complexity p99"
+    soa-cognitive-complexity $1 $2 p99
+    echo -e "\nCohesion average"
+    soa-cohesion $1 $2 average
+    echo -e "\nCohesion p99"
+    soa-cohesion $1 $2 p99
     echo -e "\nNumber of Words"
     soa-words $1 $2
     echo "######### ############################## #########"
@@ -204,41 +221,34 @@ then
     for application in insurance_claims mblogger ride_allocation
     do
         # filename not provided, print metrics to the screen
-        print-fbp-metrics $application fbp_app_min average
+        print-fbp-metrics $application fbp_app_min
         echo -e "\n"
-        print-fbp-metrics $application fbp_app_data average
+        print-fbp-metrics $application fbp_app_data
         echo -e "\n"
-        print-fbp-metrics $application fbp_app_ml average
+        print-fbp-metrics $application fbp_app_ml
         echo -e "\n"
 
         echo -e "\n"
-        print-soa-metrics $application soa_app_min average
+        print-soa-metrics $application soa_app_min
         echo -e "\n"
-        print-soa-metrics $application soa_app_data average
+        print-soa-metrics $application soa_app_data
         echo -e "\n"
-        print-soa-metrics $application soa_app_ml average
+        print-soa-metrics $application soa_app_ml
     done
     
     exit 0
 else
-    if [ -z "$2" ]
-    then
-        stat=average
-    else
-        stat=$2
-    fi
-
     # filename provided, write metrics to this file
     echo -n "" > $1
     write-csv-header $1
     for application in insurance_claims mblogger ride_allocation
     do
-        write-metrics-to-csv $application fbp_app_min $1 $stat
-        write-metrics-to-csv $application fbp_app_data $1 $stat
-        write-metrics-to-csv $application fbp_app_ml $1 $stat
-        write-metrics-to-csv $application soa_app_min $1 $stat
-        write-metrics-to-csv $application soa_app_data $1 $stat
-        write-metrics-to-csv $application soa_app_ml $1 $stat
+        write-metrics-to-csv $application fbp_app_min $1
+        write-metrics-to-csv $application fbp_app_data $1
+        write-metrics-to-csv $application fbp_app_ml $1
+        write-metrics-to-csv $application soa_app_min $1
+        write-metrics-to-csv $application soa_app_data $1
+        write-metrics-to-csv $application soa_app_ml $1
     done
     exit 0
 fi
