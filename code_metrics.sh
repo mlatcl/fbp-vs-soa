@@ -79,13 +79,13 @@ function fbp-maintainability-index() {
 function fbp-cyclomatic-complexity() {
     app=$1
     key=$2
-    radon cc -as $app/$key/$key.py | grep Average
+    radon cc -as $app/$key/$key.py | grep -E -o '[M|C].*' | grep -E -o '\(*[0-9]+)' | grep -o -E '[0-9]+' | percentile
 }
 
 function fbp-cognitive-complexity() {
     app=$1
     key=$2
-    flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key/$key.py| grep -E -o '\(.*>' | grep -o -E '[0-9]+' | percentile
+    flake8 --select=CCR001 --max-cognitive-complexity=-1 $app/$key/$key.py | grep -E -o '\(.*>' | grep -o -E '[0-9]+' | percentile
 }
 
 function fbp-cohesion() {
@@ -148,7 +148,7 @@ function soa-maintainability-index() {
 function soa-cyclomatic-complexity() {
     app=$1
     key=$2
-    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -a -not -name "text_generator.py" -exec cat {} \; | radon cc -as - | grep Average
+    find $app/$key -iname '*.py' -a -not -name 'soa_model_training.py' -a -not -name "text_generator.py" -exec cat {} \; | radon cc -as - | grep -E -o '[M|C].*' | grep -E -o '\(*[0-9]+)' | grep -o -E '[0-9]+' | percentile
 }
 
 function soa-cognitive-complexity() {
