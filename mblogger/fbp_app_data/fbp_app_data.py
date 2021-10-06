@@ -85,17 +85,6 @@ class PersonalDictionaryStream(Stream):
         return {'personal_dictionaries': self.data}
 
 
-class NewBigramsStream(Stream):
-    def __init__(self, **kwargs):
-        super(NewBigramsStream, self).__init__(**kwargs)
-        InputPlug('new_bigrams', self)
-        OutputPlug('new_bigrams', self)
-
-    def compute(self, new_bigrams: List[Tuple]) -> Dict:
-        self.add_data(new_bigrams)
-        return {'new_bigrams': self.data}
-
-
 class BigramWeightsStream(Stream):
     def __init__(self, **kwargs):
         super(BigramWeightsStream, self).__init__(**kwargs)
@@ -196,56 +185,30 @@ class BuildTimeline(INode):
         return {'timelines': timelines}
 
 
-class BuildPersonalDictionaries(INode):
+class ProcessPosts(INode):
     def __init__(self, **kwargs):
-        super(BuildPersonalDictionaries, self).__init__(**kwargs)
+        super(ProcessPosts, self).__init__(**kwargs)
         InputPlug('posts', self)
         OutputPlug('personal_dictionaries', self)
+        OutputPlug('bigram_weights', self)
 
     def compute(self, posts: List[Post]) -> Dict:
         personal_dictionaries = {}
+        new_bigrams = []
 
         for post in posts:
             user_id = post.author_id
             if user_id not in personal_dictionaries:
                 personal_dictionaries[user_id] = set()
-            
-            text = post.text
-            words = text.split(" ")
+
+            words = post.text.split(" ")
+            words = [word for word in words if word]
             for word in words:
                 personal_dictionaries[user_id].add(word)
 
-        output = [PersonalDictionary(user_id=k, words=v) for k, v in personal_dictionaries.items()]
-
-        return {'personal_dictionaries': output}
-
-
-class FindBigrams(INode):
-    def __init__(self, **kwargs):
-        super(FindBigrams, self).__init__(**kwargs)
-        InputPlug('posts', self)
-        OutputPlug('new_bigrams', self)
-    
-
-    def compute(self, posts: List[Post]):
-        bigrams = []
-        for post in posts:
-            words = post.text.split(" ")
-            words = [word for word in words if word]
             for bigram in zip([POST_START_WORD, *words], words):
-                bigrams.append(bigram)
-        
-        return {'new_bigrams': bigrams}
+                new_bigrams.append(bigram)
 
-
-class ProcessBigrams(INode):
-    def __init__(self, **kwargs):
-        super(ProcessBigrams, self).__init__(**kwargs)
-        InputPlug('new_bigrams', self)
-        OutputPlug('bigram_weights', self)
-
-    def compute(self, new_bigrams: List[Tuple]) -> Dict:
-        bigrams_dict = {}
         bigram_weights_dict = {}
 
         for lhs, rhs in new_bigrams:
@@ -260,7 +223,9 @@ class ProcessBigrams(INode):
                 weight=bigram_weights_dict[b],
             ) for b in bigram_weights_dict]
 
-        return {'bigram_weights': bigram_weights}
+        personal_dicts = [PersonalDictionary(user_id=k, words=v) for k, v in personal_dictionaries.items()]
+
+        return {'bigram_weights': bigram_weights, 'personal_dictionaries': personal_dicts}
 
 
 class App():
@@ -303,7 +268,6 @@ class App():
         }
 
         # inner streams
-        new_bigrams_stream = NewBigramsStream(graph=graph)
         bigram_weights_stream = BigramWeightsStream(graph=graph)
         personal_dictionaries_stream = PersonalDictionaryStream(graph=graph)
 
@@ -321,9 +285,7 @@ class App():
         update_follows = UpdateFollows(graph=graph)
         build_timeline = BuildTimeline(graph=graph)
 
-        build_personal_dictionaries = BuildPersonalDictionaries(graph=graph)
-        find_bigrams = FindBigrams(graph=graph)
-        process_bigrams = ProcessBigrams(graph=graph)
+        process_posts = ProcessPosts(graph=graph)
 
         follow_request_stream.outputs["follow_requests"] >> update_follows.inputs["follow_requests"]
         current_followers_stream.outputs["followers"] >> update_follows.inputs["followers"]
@@ -336,13 +298,9 @@ class App():
         updated_followings_stream.outputs["followings"] >> build_timeline.inputs["followings"]
         build_timeline.outputs["timelines"] >> timelines_stream.inputs["timelines"]
 
-        posts_stream.outputs["posts"] >> build_personal_dictionaries.inputs["posts"]
-        build_personal_dictionaries.outputs["personal_dictionaries"] >> personal_dictionaries_stream.inputs["personal_dictionaries"]
-
-        posts_stream.outputs["posts"] >> find_bigrams.inputs["posts"]
-        find_bigrams.outputs["new_bigrams"] >> new_bigrams_stream.inputs["new_bigrams"]
-        new_bigrams_stream.outputs["new_bigrams"] >> process_bigrams.inputs["new_bigrams"]
-        process_bigrams.outputs["bigram_weights"] >> bigram_weights_stream.inputs["bigram_weights"]
+        posts_stream.outputs["posts"] >> process_posts.inputs["posts"]
+        process_posts.outputs["personal_dictionaries"] >> personal_dictionaries_stream.inputs["personal_dictionaries"]
+        process_posts.outputs["bigram_weights"] >> bigram_weights_stream.inputs["bigram_weights"]
 
         self.graph = graph
 
