@@ -1,0 +1,287 @@
+diff --git a/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc b/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc
+deleted file mode 100755
+index 2801a71..0000000
+Binary files a/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc and /dev/null differ
+diff --git a/soa_app_ml/__pycache__/soa_app_ml.cpython-38.pyc b/soa_app_ml/__pycache__/soa_app_ml.cpython-38.pyc
+new file mode 100755
+index 0000000..77ce6cb
+Binary files /dev/null and b/soa_app_ml/__pycache__/soa_app_ml.cpython-38.pyc differ
+diff --git a/soa_app_data/flaskr/README.md b/soa_app_ml/flaskr/README.md
+index a63c3d6..c59b158 100755
+--- a/soa_app_data/flaskr/README.md
++++ b/soa_app_ml/flaskr/README.md
+@@ -5,9 +5,9 @@
+ # Running the application
+ 1. Requirements must be installed in the environment - pip3 install -r requirements.txt
+ 2. Following this tutorial - https://flask.palletsprojects.com/en/1.1.x/tutorial/factory/
+-Run next commands in console in the project path fbp-vs-soa/mblogger/soa_app_data/
++Run next commands in console in the project path fbp-vs-soa/mblogger/soa_app_ml/
+     * $ export FLASK_APP=flaskr
+     * $ export FLASK_ENV=development
+     * $ flask init-db
+     * $ flask run
+-3. Run the main file of the fbp-vs-soa/mblogger project passing "soa_app_data" as a parameter
++3. Run the main file of the fbp-vs-soa/mblogger project passing "soa_app_ml" as a parameter
+diff --git a/soa_app_data/flaskr/data/post.py b/soa_app_ml/flaskr/data/post.py
+index 58b2116..08b5c27 100755
+--- a/soa_app_data/flaskr/data/post.py
++++ b/soa_app_ml/flaskr/data/post.py
+@@ -1,11 +1,13 @@
+ from .db import get_db
+ from datetime import datetime
++import random
++from .text_generator import TextGenerator
+ 
+ 
+ # Creates a new post
+ def create_post(post):
+     db = get_db()
+-    sql = 'INSERT INTO Posts (post_id, user_id, text, time_stamp) VALUES (?,?,?,?) ' \
++    sql = 'INSERT INTO Posts (post_id, user_id, text, type, time_stamp) VALUES (?,?,?,0,?) ' \
+           'ON CONFLICT(post_id) DO UPDATE SET text = ?'
+     values = [post['post_id'], post['author_id'], post['text'],
+               datetime.strptime(post['timestamp'], '%Y-%m-%d %H:%M:%S.%f'), post['text']]
+@@ -38,3 +40,49 @@ def get_timelines():
+         res.append(tl)
+     return res
+ 
++
++# Gets generated posts
++def get_generated_posts():
++    res = []
++    db = get_db()
++    sql = 'SELECT * FROM Posts WHERE type = 1'
++    cursor = db.execute(sql)
++    for post in cursor:
++        p = {'post_id': post['post_id'], 'author_id': post['user_id'], 'text': post['text'],
++             'timestamp': post['time_stamp'].strftime('%Y-%m-%d %H:%M:%S.%f')}
++        res.append(p)
++    return res
++
++
++# Creates Generated post
++def generate_post(req):
++    user_id = req['user_id']
++    length = req['length']
++
++    db = get_db()
++    sql = 'SELECT first_word FROM Bigrams'
++    cursor = db.execute(sql)
++    bigram_weights = []
++    for row in cursor:
++        bigram = {'first_word': row['first_word'], 'second_word': row['second_word'], 'weight': row['weight']}
++        bigram_weights.append(bigram)
++    text_generator = TextGenerator(bigram_weights)
++
++    sql = 'SELECT * FROM PersonalDictionaries WHERE user_id = ?'
++    values = [user_id]
++    cursor = db.execute(sql, values)
++    personal_words = []
++    for row in cursor:
++        personal_words.append(row['word'])
++    text = text_generator.generate(personal_words, length)
++    if len(text) > 0:
++        sql = 'INSERT INTO Posts (post_id, user_id, text, type, time_stamp) VALUES (?,?,?,1,?) ' \
++              'ON CONFLICT(post_id) DO UPDATE SET text = ?'
++        values = [random.getrandbits(8), user_id, text, datetime.strptime(str(datetime.now()), '%Y-%m-%d %H:%M:%S.%f'),
++                  text]
++        cursor = db.execute(sql, values)
++        db.commit()
++        return cursor.lastrowid
++    else:
++        return 0
++
+diff --git a/soa_app_data/flaskr/data/schema.sql b/soa_app_ml/flaskr/data/schema.sql
+index bc44375..4125a36 100755
+--- a/soa_app_data/flaskr/data/schema.sql
++++ b/soa_app_ml/flaskr/data/schema.sql
+@@ -14,6 +14,7 @@ CREATE TABLE Posts(
+   post_id INTEGER PRIMARY KEY,
+   user_id INTEGER NOT NULL,
+   text TEXT NOT NULL,
++  type INTEGER,
+   time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+ );
+ 
+diff --git a/soa_app_ml/flaskr/data/text_generator.py b/soa_app_ml/flaskr/data/text_generator.py
+new file mode 100755
+index 0000000..8e7f1b5
+--- /dev/null
++++ b/soa_app_ml/flaskr/data/text_generator.py
+@@ -0,0 +1,51 @@
++import random
++import itertools as it
++from typing import List, Dict
++
++from mblogger.record_types import BigramWithWeight
++
++POST_START_WORD = "^"
++PERSONAL_WORDS_WEIGHT = 10.0
++
++
++class TextGenerator:
++    def __init__(self, bigram_weights: List[BigramWithWeight]):
++        self._create_bigram_dicts(bigram_weights)
++
++    def _create_bigram_dicts(self, bigram_weights):
++        self._bigrams_dict = {}
++        self._bigram_weights_dict = {}
++
++        for bigram_weight in bigram_weights:
++            lhs = bigram_weight.first_word
++            rhs = bigram_weight.second_word
++
++            if lhs not in self._bigrams_dict:
++                self._bigrams_dict[lhs] = set()
++            self._bigrams_dict[lhs].add(rhs)
++
++            if (lhs, rhs) not in self._bigram_weights_dict:
++                self._bigram_weights_dict[lhs, rhs] = 0
++            self._bigram_weights_dict[lhs, rhs] += bigram_weight.weight
++
++    def _word_generator(self, personal_words):
++        current_word = POST_START_WORD
++
++        while True:
++            next_words = list(self._bigrams_dict.get(current_word, []))
++            next_weights = [
++                (PERSONAL_WORDS_WEIGHT if next_word in personal_words else 1.0)
++                * self._bigram_weights_dict[current_word, next_word]
++                for next_word in next_words
++            ]
++            if not next_words:
++                return
++
++            next_word = random.choices(next_words, weights=next_weights)[0]
++            current_word = next_word
++            yield current_word
++
++    def generate(self, personal_words: Dict, word_count: int):
++        text = " ".join(it.islice(self._word_generator(personal_words), word_count))
++
++        return text
+diff --git a/soa_app_data/flaskr/data/words.py b/soa_app_ml/flaskr/data/words.py
+index 7b20c5f..a855a7e 100755
+--- a/soa_app_data/flaskr/data/words.py
++++ b/soa_app_ml/flaskr/data/words.py
+@@ -30,3 +30,4 @@ def update_personal_directory(post):
+         db.execute(sql, values)
+         db.commit()
+ 
++
+diff --git a/soa_app_data/flaskr/post.py b/soa_app_ml/flaskr/post.py
+index f52227f..afdc459 100755
+--- a/soa_app_data/flaskr/post.py
++++ b/soa_app_ml/flaskr/post.py
+@@ -11,9 +11,10 @@ def create_posts():
+     res = {}
+     req = request.get_json()
+     for r in req:
++        affected = post.create_post(r)
+         words.update_bigrams(r)
+         words.update_personal_directory(r)
+-        affected = post.create_post(r)
++
+     res['msg'] = 'New posts created = ' + str(affected)
+     res = make_response(jsonify(res), 200)
+     return res
+@@ -25,3 +26,22 @@ def get_timelines():
+     res = post.get_timelines()
+     res = make_response(jsonify(res), 200)
+     return res
++
++
++# Get generated posts
++@bp.route('/get_generated_posts', methods=('GET', 'POST'))
++def get_generated_posts():
++    res = post.get_generated_posts()
++    res = make_response(jsonify(res), 200)
++    return res
++
++
++# Create generated posts
++@bp.route('/generate_post', methods=('GET', 'POST'))
++def generate_post():
++    res = {}
++    req = request.get_json()
++    affected = post.generate_post(req)
++    res['msg'] = 'New posts created = ' + str(affected)
++    res = make_response(jsonify(res), 200)
++    return res
+diff --git a/soa_app_data/soa_app_data.py b/soa_app_ml/soa_app_ml.py
+similarity index 71%
+rename from soa_app_data/soa_app_data.py
+rename to soa_app_ml/soa_app_ml.py
+index 4b52c2c..8bf513c 100755
+--- a/soa_app_data/soa_app_data.py
++++ b/soa_app_ml/soa_app_ml.py
+@@ -11,7 +11,8 @@ class App():
+         followers = self._get_followers()
+         followings = self._get_followings()
+         timelines = self._get_timelines()
+-        return self.get_outputs(followers, followings, timelines)
++        generated_posts = self._get_generated_posts()
++        return self.get_outputs(followers, followings, timelines, generated_posts)
+ 
+     # Client to get list of followers
+     def _get_followers(self):
+@@ -34,9 +35,17 @@ class App():
+         followings = response.json()
+         return followings
+ 
+-    def add_data(self, followings, followers, follow_requests, posts):
++    # Client to get list of generated posts
++    def _get_generated_posts(self):
++        url = base_url + 'post-request/get_generated_posts'
++        response = requests.post(url, json={})
++        generated_posts = response.json()
++        return generated_posts
++
++    def add_data(self, followings, followers, follow_requests, posts, input_record):
+         self._add_follow_requests(follow_requests)
+         self._add_posts(posts)
++        self._add_generated_post(input_record)
+ 
+     # Client to add follows data
+     def _add_follow_requests(self, follow_requests):
+@@ -61,12 +70,22 @@ class App():
+             response = requests.post(url, json=ps)
+             # print(response.json())
+ 
++    # Client to add a generated post
++    def _add_generated_post(self, input_record):
++        for ir in input_record:
++            req = {}
++            req['user_id'] = ir.user_id
++            req['length'] = ir.length
++            url = base_url + 'post-request/generate_post'
++            response = requests.post(url, json=req)
++
+     # Parsing data for main program
+-    def get_outputs(self, followers, followings, timelines):
++    def get_outputs(self, followers, followings, timelines, generated_posts):
+         followers = self._parse_followers(followers)
+         followings = self._parse_followings(followings)
+         timelines = self._parse_timelines(timelines)
+-        return followers, followings, timelines
++        generated_posts = self._parse_generated_posts(generated_posts)
++        return followers, followings, timelines, generated_posts
+ 
+     # Parses followers
+     def _parse_followers(self, followers):
+@@ -100,6 +119,15 @@ class App():
+             ts.append(t)
+         return ts
+ 
++    # Parses generated posts
++    def _parse_generated_posts(self, generated_posts):
++        ps = []
++        for post in generated_posts:
++            post['timestamp'] = datetime.strptime(post['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
++            p = Post.from_dict(post)
++            ps.append(p)
++        return ps
++
+ 
+ if __name__ == "__main__":
+     app = App()

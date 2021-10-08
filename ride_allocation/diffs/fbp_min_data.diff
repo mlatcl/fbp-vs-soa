@@ -1,0 +1,141 @@
+diff --git a/fbp_app_min/__init__.py b/fbp_app_data/__init__.py
+index d6c6798..abbd520 100755
+--- a/fbp_app_min/__init__.py
++++ b/fbp_app_data/__init__.py
+@@ -1 +1 @@
+-from .fbp_app_min import App
++from .fbp_app_data import App
+diff --git a/fbp_app_min/__pycache__/__init__.cpython-36.pyc b/fbp_app_data/__pycache__/__init__.cpython-36.pyc
+index 18c8237..6c401ba 100755
+Binary files a/fbp_app_min/__pycache__/__init__.cpython-36.pyc and b/fbp_app_data/__pycache__/__init__.cpython-36.pyc differ
+diff --git a/fbp_app_min/__pycache__/__init__.cpython-38.pyc b/fbp_app_data/__pycache__/__init__.cpython-38.pyc
+index 8945152..c361352 100755
+Binary files a/fbp_app_min/__pycache__/__init__.cpython-38.pyc and b/fbp_app_data/__pycache__/__init__.cpython-38.pyc differ
+diff --git a/fbp_app_data/__pycache__/fbp_app_data.cpython-36.pyc b/fbp_app_data/__pycache__/fbp_app_data.cpython-36.pyc
+new file mode 100755
+index 0000000..97dc0f7
+Binary files /dev/null and b/fbp_app_data/__pycache__/fbp_app_data.cpython-36.pyc differ
+diff --git a/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc b/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc
+new file mode 100755
+index 0000000..2a60289
+Binary files /dev/null and b/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc differ
+diff --git a/fbp_app_min/__pycache__/fbp_app_min.cpython-36.pyc b/fbp_app_min/__pycache__/fbp_app_min.cpython-36.pyc
+deleted file mode 100755
+index b07683e..0000000
+Binary files a/fbp_app_min/__pycache__/fbp_app_min.cpython-36.pyc and /dev/null differ
+diff --git a/fbp_app_min/__pycache__/fbp_app_min.cpython-38.pyc b/fbp_app_min/__pycache__/fbp_app_min.cpython-38.pyc
+deleted file mode 100755
+index f5bb9ae..0000000
+Binary files a/fbp_app_min/__pycache__/fbp_app_min.cpython-38.pyc and /dev/null differ
+diff --git a/fbp_app_min/fbp_app_min.py b/fbp_app_data/fbp_app_data.py
+similarity index 83%
+rename from fbp_app_min/fbp_app_min.py
+rename to fbp_app_data/fbp_app_data.py
+index 589d053..ef18083 100755
+--- a/fbp_app_min/fbp_app_min.py
++++ b/fbp_app_data/fbp_app_data.py
+@@ -300,8 +300,12 @@ class App():
+         self.input_streams['current_ride_info_stream'].add_data(ride_infos)
+ 
+ 
+-    def evaluate(self):
++    def evaluate(self, save_dataset=False):
+         self.graph.evaluate()
++
++        if save_dataset:
++            self._save_dataset()
++
+         return self.get_outputs()
+ 
+     def get_outputs(self):
+@@ -367,6 +371,90 @@ class App():
+         self.graph = graph
+ 
+ 
++    def _save_dataset(self):
++        raw_data = self._collect_raw_data()
++
++        dataset_records = []
++        for output_record in raw_data["AllocateRide"]["outputs"]:
++            if not isinstance(output_record, RideInformation):
++                continue
++
++            ride_id = output_record.ride_id
++            driver_id = output_record.driver_id
++
++            driver_record = None
++            for ir in raw_data["AllocateRide"]["inputs"]:
++                if isinstance(ir, DriverInformation) \
++                   and ir.last_state == DriverState.AVAILABLE and ir.driver_id == driver_id:
++                    driver_record = ir
++
++            if driver_record is not None:
++                dataset_records.append({
++                    "ride_id": ride_id,
++                    "driver_id": driver_id,
++                    "driver_lat": driver_record.last_location.lat,
++                    "driver_lon": driver_record.last_location.lon,
++                    "user_lat": output_record.last_location.lat,
++                    "user_lon": output_record.last_location.lat
++                })
++
++        allocate_ride_df = pd.DataFrame(dataset_records)
++        self._write_data_to_csv("allocate_ride_fbp_app.csv", allocate_ride_df)
++
++        dataset_records = []
++        for record in raw_data["CalculateRideWaitTime"]["outputs"]:
++            dataset_records.append({
++                "ride_id": record.ride_id,
++                "wait_duration": record.wait_duration
++            })
++        wait_time_df = pd.DataFrame(dataset_records)
++        self._write_data_to_csv("wait_time_fbp_app.csv", wait_time_df)
++
++
++    def _collect_raw_data(self):
++        raw_data = {
++            'AllocateRide': {
++                'inputs': [],
++                'outputs': []
++            },
++            'CalculateRideWaitTime': {
++                'inputs': [],
++                'outputs': []
++            },
++        }
++
++        nodes_to_collect = raw_data.keys()
++        for node in self.graph.all_nodes:
++            if node.name not in nodes_to_collect:
++                continue
++            
++            for _, input_plug in node.all_inputs().items():
++                for plug in input_plug.connections:
++                    raw_data[node.name]['inputs'].extend(plug.node.get_data())
++            
++            for _, output_plug in node.all_outputs().items():
++                for plug in output_plug.connections:
++                    raw_data[node.name]['outputs'].extend(plug.node.get_data())
++        
++        return raw_data
++
++    def _write_data_to_csv(self, filename, df):
++        """
++        Writes data from given pandas DataFrame to file
++        Creates new file (with header) if it doesn't exist
++        otherwise appends data to existing file
++
++        Does not do anything if the dataset is empty
++        """
++        if df.empty:
++            return
++
++        if os.path.isfile(filename):
++            df.to_csv(filename, mode="a", index=False, header=False)
++        else:
++            df.to_csv(filename, mode="w", index=False, header=True)
++
++
+ if __name__ == "__main__":
+     app = App()
+     graph = app.graph

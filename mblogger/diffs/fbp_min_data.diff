@@ -1,0 +1,147 @@
+diff --git a/fbp_app_min/__init__.py b/fbp_app_data/__init__.py
+index ba938a8..6218f5b 100755
+--- a/fbp_app_min/__init__.py
++++ b/fbp_app_data/__init__.py
+@@ -1 +1 @@
+-from .fbp_app_min import App
+\ No newline at end of file
++from .fbp_app_data import App
+\ No newline at end of file
+diff --git a/fbp_app_min/__pycache__/__init__.cpython-38.pyc b/fbp_app_data/__pycache__/__init__.cpython-38.pyc
+index 54e801f..efa6c05 100755
+Binary files a/fbp_app_min/__pycache__/__init__.cpython-38.pyc and b/fbp_app_data/__pycache__/__init__.cpython-38.pyc differ
+diff --git a/fbp_app_min/__pycache__/app.cpython-38.pyc b/fbp_app_data/__pycache__/app.cpython-38.pyc
+index f2caa3f..7e201ad 100755
+Binary files a/fbp_app_min/__pycache__/app.cpython-38.pyc and b/fbp_app_data/__pycache__/app.cpython-38.pyc differ
+diff --git a/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc b/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc
+new file mode 100755
+index 0000000..9cb483a
+Binary files /dev/null and b/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc differ
+diff --git a/fbp_app_min/__pycache__/fbp_app_min.cpython-38.pyc b/fbp_app_min/__pycache__/fbp_app_min.cpython-38.pyc
+deleted file mode 100755
+index 55adb79..0000000
+Binary files a/fbp_app_min/__pycache__/fbp_app_min.cpython-38.pyc and /dev/null differ
+diff --git a/fbp_app_min/fbp_app_min.py b/fbp_app_data/fbp_app_data.py
+similarity index 74%
+rename from fbp_app_min/fbp_app_min.py
+rename to fbp_app_data/fbp_app_data.py
+index 3098cc4..cadd3ea 100755
+--- a/fbp_app_min/fbp_app_min.py
++++ b/fbp_app_data/fbp_app_data.py
+@@ -4,6 +4,8 @@ from datetime import datetime
+ from flowpipe import Graph, INode, Node, InputPlug, OutputPlug
+ from mblogger.record_types import *
+ 
++POST_START_WORD = "^"
++
+ 
+ class Stream(INode):
+     def __init__(self, **kwargs):
+@@ -71,6 +73,28 @@ class PostsStream(Stream):
+         return {'posts': self.data}
+ 
+ 
++############ internal streams ############
++class PersonalDictionaryStream(Stream):
++    def __init__(self, **kwargs):
++        super(PersonalDictionaryStream, self).__init__(**kwargs)
++        InputPlug('personal_dictionaries', self)
++        OutputPlug('personal_dictionaries', self)
++
++    def compute(self, personal_dictionaries: List[PersonalDictionary]) -> Dict:
++        self.add_data(personal_dictionaries)
++        return {'personal_dictionaries': self.data}
++
++
++class BigramWeightsStream(Stream):
++    def __init__(self, **kwargs):
++        super(BigramWeightsStream, self).__init__(**kwargs)
++        InputPlug('bigram_weights', self)
++        OutputPlug('bigram_weights', self)
++
++    def compute(self, bigram_weights: List[BigramWithWeight]) -> Dict:
++        self.add_data(bigram_weights)
++        return {'bigram_weights': self.data}
++
+ ############ output streams ##############
+ 
+ class UpdatedFollowingsStream(Stream):
+@@ -161,6 +185,49 @@ class BuildTimeline(INode):
+         return {'timelines': timelines}
+ 
+ 
++class ProcessPosts(INode):
++    def __init__(self, **kwargs):
++        super(ProcessPosts, self).__init__(**kwargs)
++        InputPlug('posts', self)
++        OutputPlug('personal_dictionaries', self)
++        OutputPlug('bigram_weights', self)
++
++    def compute(self, posts: List[Post]) -> Dict:
++        personal_dictionaries = {}
++        new_bigrams = []
++
++        for post in posts:
++            user_id = post.author_id
++            if user_id not in personal_dictionaries:
++                personal_dictionaries[user_id] = set()
++
++            words = post.text.split(" ")
++            words = [word for word in words if word]
++            for word in words:
++                personal_dictionaries[user_id].add(word)
++
++            for bigram in zip([POST_START_WORD, *words], words):
++                new_bigrams.append(bigram)
++
++        bigram_weights_dict = {}
++
++        for lhs, rhs in new_bigrams:
++            if (lhs, rhs) not in bigram_weights_dict:
++                bigram_weights_dict[lhs, rhs] = 0
++            bigram_weights_dict[lhs, rhs] += 1
++
++        bigram_weights = [
++            BigramWithWeight(
++                first_word=b[0],
++                second_word=b[1],
++                weight=bigram_weights_dict[b],
++            ) for b in bigram_weights_dict]
++
++        personal_dicts = [PersonalDictionary(user_id=k, words=v) for k, v in personal_dictionaries.items()]
++
++        return {'bigram_weights': bigram_weights, 'personal_dictionaries': personal_dicts}
++
++
+ class App():
+     def __init__(self):
+         self._build()
+@@ -201,6 +268,8 @@ class App():
+         }
+ 
+         # inner streams
++        bigram_weights_stream = BigramWeightsStream(graph=graph)
++        personal_dictionaries_stream = PersonalDictionaryStream(graph=graph)
+ 
+         # output streams
+         updated_followings_stream = UpdatedFollowingsStream(graph=graph)
+@@ -216,6 +285,8 @@ class App():
+         update_follows = UpdateFollows(graph=graph)
+         build_timeline = BuildTimeline(graph=graph)
+ 
++        process_posts = ProcessPosts(graph=graph)
++
+         follow_request_stream.outputs["follow_requests"] >> update_follows.inputs["follow_requests"]
+         current_followers_stream.outputs["followers"] >> update_follows.inputs["followers"]
+         current_followings_stream.outputs["followings"] >> update_follows.inputs["followings"]
+@@ -227,6 +298,10 @@ class App():
+         updated_followings_stream.outputs["followings"] >> build_timeline.inputs["followings"]
+         build_timeline.outputs["timelines"] >> timelines_stream.inputs["timelines"]
+ 
++        posts_stream.outputs["posts"] >> process_posts.inputs["posts"]
++        process_posts.outputs["personal_dictionaries"] >> personal_dictionaries_stream.inputs["personal_dictionaries"]
++        process_posts.outputs["bigram_weights"] >> bigram_weights_stream.inputs["bigram_weights"]
++
+         self.graph = graph
+ 
+ 

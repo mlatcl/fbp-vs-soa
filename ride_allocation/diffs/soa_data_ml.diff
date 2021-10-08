@@ -1,0 +1,370 @@
+diff --git a/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc b/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc
+deleted file mode 100755
+index 5379e76..0000000
+Binary files a/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc and /dev/null differ
+diff --git a/soa_app_ml/__pycache__/soa_app_ml.cpython-38.pyc b/soa_app_ml/__pycache__/soa_app_ml.cpython-38.pyc
+new file mode 100755
+index 0000000..da72ac1
+Binary files /dev/null and b/soa_app_ml/__pycache__/soa_app_ml.cpython-38.pyc differ
+diff --git a/soa_app_data/allocate_ride_soa_app.csv b/soa_app_ml/allocate_ride_soa_app.csv
+index 00517ca..6d6cac9 100755
+--- a/soa_app_data/allocate_ride_soa_app.csv
++++ b/soa_app_ml/allocate_ride_soa_app.csv
+@@ -458,6 +458,47 @@ driver_id,ride_id,user_lat,user_lon,driver_lat,driver_lon
+ 10,17,98.95233506365952,63.999975985409286,7.254311449315731,45.82855226185861
+ 9,16,45.500836733914326,42.30074859901629,31.6177196271854,75.18644924144022
+ 10,17,98.95233506365952,63.999975985409286,7.254311449315731,45.82855226185861
++0,0,20.11510633896959,31.171629130089496,59.50351064500276,67.52125536040901
++10,17,98.95233506365952,63.999975985409286,7.254311449315731,45.82855226185861
++1,19,21.42368073704386,13.2311848725025,23.52038950009312,11.98866139471242
++0,0,20.11510633896959,31.171629130089496,59.50351064500276,67.52125536040901
++0,0,20.11510633896959,31.171629130089496,59.50351064500276,67.52125536040901
++0,0,20.11510633896959,31.171629130089496,59.50351064500276,67.52125536040901
++0,0,20.11510633896959,31.171629130089496,59.50351064500276,67.52125536040901
++0,0,20.11510633896959,31.171629130089496,59.50351064500276,67.52125536040901
++0,0,20.11510633896959,31.171629130089496,59.50351064500276,67.52125536040901
++0,0,20.11510633896959,31.171629130089496,59.50351064500276,67.52125536040901
++1,2,96.87093649691589,57.91802908162562,23.52038950009312,11.98866139471242
++2,3,70.45718362149235,4.5824383655662215,89.02873141294376,24.621534778862486
++2,3,70.45718362149235,4.5824383655662215,89.02873141294376,24.621534778862486
++3,4,9.090941217379388,4.711637542473457,59.45191535334412,61.93815103321031
++3,4,9.090941217379388,4.711637542473457,59.45191535334412,61.93815103321031
++4,5,40.26212821022688,33.93026053949632,41.92249153358725,58.367228929122476
++3,4,9.090941217379388,4.711637542473457,59.45191535334412,61.93815103321031
++4,5,40.26212821022688,33.93026053949632,41.92249153358725,58.367228929122476
++5,6,72.90758494598506,67.33645472933016,52.278271553195886,93.47062577364272
++3,4,9.090941217379388,4.711637542473457,59.45191535334412,61.93815103321031
++4,5,40.26212821022688,33.93026053949632,41.92249153358725,58.367228929122476
++5,6,72.90758494598506,67.33645472933016,52.278271553195886,93.47062577364272
++3,4,9.090941217379388,4.711637542473457,59.45191535334412,61.93815103321031
++4,5,40.26212821022688,33.93026053949632,41.92249153358725,58.367228929122476
++5,6,72.90758494598506,67.33645472933016,52.278271553195886,93.47062577364272
++3,4,9.090941217379388,4.711637542473457,59.45191535334412,61.93815103321031
++4,5,40.26212821022688,33.93026053949632,41.92249153358725,58.367228929122476
++6,11,91.45475897405436,45.88518525873988,20.425919942353644,71.61918007894148
++6,11,91.45475897405436,45.88518525873988,20.425919942353644,71.61918007894148
++6,11,91.45475897405436,45.88518525873988,20.425919942353644,71.61918007894148
++7,13,84.28519201898096,77.59999115462448,23.868595261584602,39.57858467912545
++7,13,84.28519201898096,77.59999115462448,23.868595261584602,39.57858467912545
++8,14,82.94046642529949,61.85197523642461,67.16902229599712,29.999707979876224
++7,13,84.28519201898096,77.59999115462448,23.868595261584602,39.57858467912545
++8,14,82.94046642529949,61.85197523642461,67.16902229599712,29.999707979876224
++7,13,84.28519201898096,77.59999115462448,23.868595261584602,39.57858467912545
++9,16,45.500836733914326,42.30074859901629,31.6177196271854,75.18644924144022
++9,16,45.500836733914326,42.30074859901629,31.6177196271854,75.18644924144022
++10,17,98.95233506365952,63.999975985409286,7.254311449315731,45.82855226185861
++9,16,45.500836733914326,42.30074859901629,31.6177196271854,75.18644924144022
++10,17,98.95233506365952,63.999975985409286,7.254311449315731,45.82855226185861
+ 10,17,98.95233506365952,63.999975985409286,7.254311449315731,45.82855226185861
+ 11,19,21.42368073704386,13.2311848725025,99.84544408544423,99.60964478550945
+ 10,17,98.95233506365952,63.999975985409286,7.254311449315731,45.82855226185861
+diff --git a/soa_app_data/flaskr/README.md b/soa_app_ml/flaskr/README.md
+index dfd12a8..0ba5163 100755
+--- a/soa_app_data/flaskr/README.md
++++ b/soa_app_ml/flaskr/README.md
+@@ -5,9 +5,9 @@
+ # Running the application
+ 1. Requirements must be installed in the environment - pip3 install -r requirements.txt
+ 2. Following this tutorial - https://flask.palletsprojects.com/en/1.1.x/tutorial/factory/
+-Run next commands in console in the project path fbp-vs-soa/ride_allocation/soa_app_data/
++Run next commands in console in the project path fbp-vs-soa/ride_allocation/soa_app_ml/
+     * $ export FLASK_APP=flaskr
+     * $ export FLASK_ENV=development
+     * $ flask init-db
+     * $ flask run
+-3. Run the main file of the fbp-vs-soa/ride_allocation project passing "soa_app_data" as a parameter
+\ No newline at end of file
++3. Run the main file of the fbp-vs-soa/ride_allocation project passing "soa_app_ml" as a parameter
+\ No newline at end of file
+diff --git a/soa_app_data/flaskr/__init__.py b/soa_app_ml/flaskr/__init__.py
+index 71fa7ab..65a89f4 100755
+--- a/soa_app_data/flaskr/__init__.py
++++ b/soa_app_ml/flaskr/__init__.py
+@@ -41,4 +41,7 @@ def create_app(test_config=None):
+     from . import data_manager
+     app.register_blueprint(data_manager.bp)
+ 
++    from . import learning
++    app.register_blueprint(learning.bp)
++
+     return app
+diff --git a/soa_app_data/flaskr/data/driver.py b/soa_app_ml/flaskr/data/driver.py
+index f415502..10df71b 100755
+--- a/soa_app_data/flaskr/data/driver.py
++++ b/soa_app_ml/flaskr/data/driver.py
+@@ -52,3 +52,11 @@ def get_driver_data_to_save(driver_id):
+     res['driver_lat'] = driver['location']['lat']
+     res['driver_lon'] = driver['location']['lon']
+     return res
++
++
++# Get driver by id
++def get_driver_by_id(driver_id):
++    if driver_id in drivers:
++        return drivers[driver_id]
++    else:
++        return None
+diff --git a/soa_app_data/flaskr/driver.py b/soa_app_ml/flaskr/driver.py
+index 8bafe24..28e097b 100755
+--- a/soa_app_data/flaskr/driver.py
++++ b/soa_app_ml/flaskr/driver.py
+@@ -80,3 +80,12 @@ def get_driver_data_to_save():
+     res = driver.get_driver_data_to_save(req['driver_id'])
+     res = make_response(jsonify(res), 200)
+     return res
++
++
++# Get driver by id API
++@bp.route('/get_driver_by_id', methods=('GET', 'POST'))
++def get_driver_by_id():
++    req = request.get_json()
++    res = driver.get_driver_by_id(req['driver_id'])
++    res = make_response(jsonify(res), 200)
++    return res
+diff --git a/soa_app_ml/flaskr/learning.py b/soa_app_ml/flaskr/learning.py
+new file mode 100755
+index 0000000..94d88c1
+--- /dev/null
++++ b/soa_app_ml/flaskr/learning.py
+@@ -0,0 +1,32 @@
++from flask import (Blueprint, request, make_response, jsonify)
++import pickle
++import os.path
++
++
++bp = Blueprint('learning', __name__, url_prefix='/learning-request')
++
++
++# Get estimated times API
++@bp.route('/get_estimated_times', methods=('GET', 'POST'))
++def get_estimated_times():
++    req = request.get_json()
++    model = None
++    if os.path.isfile("soa_model.obj"):
++        with open("soa_model.obj", "rb") as f:
++            model = pickle.load(f)
++    else:
++        model = None
++    estimates = []
++    for ride in req:
++        if ride['state'] == 'DRIVER_ASSIGNED':
++            X = [[ride['driver_info']['location']['lat'], ride['driver_info']['location']['lon'],
++                ride['last_location']['lat'], ride['last_location']['lon']]]
++            model_output = 0.0
++            if model is not None:
++                model_output = model.predict(X)[0]
++            else:
++                model_output = 0.0
++            estimate = {'ride_id': ride['ride_id'], 'wait_time': model_output}
++            estimates.append(estimate)
++    res = make_response(jsonify(estimates), 200)
++    return res
+diff --git a/soa_app_ml/flaskr/soa_model_training.py b/soa_app_ml/flaskr/soa_model_training.py
+new file mode 100755
+index 0000000..ec1c328
+--- /dev/null
++++ b/soa_app_ml/flaskr/soa_model_training.py
+@@ -0,0 +1,25 @@
++import pickle
++import pandas as pd
++from sklearn.linear_model import LinearRegression
++
++
++allocation_df = pd.read_csv("allocate_ride_soa_app.csv", header=0)
++allocation_df = allocation_df.drop_duplicates(subset=["ride_id"])
++allocation_df.set_index('ride_id', inplace=True)
++
++wait_time_df = pd.read_csv("wait_time_soa_app.csv", header=0)
++wait_time_df = wait_time_df.drop_duplicates(subset=["ride_id"])
++wait_time_df.set_index("ride_id", inplace=True)
++
++dataset_df = allocation_df.join(wait_time_df, how="left")
++dataset_df = dataset_df.dropna()
++
++X = dataset_df[["driver_lat", "driver_lon", "user_lat", "user_lon"]]
++y = pd.to_timedelta(dataset_df["wait_duration"]).dt.seconds
++
++model = LinearRegression().fit(X, y)
++print("MAE: ", (model.predict(X) - y).abs().mean())
++print("MSE: ", (model.predict(X) - y).pow(2).mean())
++
++with open("soa_model.obj", "wb") as f:
++    pickle.dump(model, f)
+diff --git a/soa_app_data/soa_app_data.py b/soa_app_ml/soa_app_ml.py
+similarity index 90%
+rename from soa_app_data/soa_app_data.py
+rename to soa_app_ml/soa_app_ml.py
+index 0ac0a36..c095769 100755
+--- a/soa_app_data/soa_app_data.py
++++ b/soa_app_ml/soa_app_ml.py
+@@ -2,7 +2,7 @@ import requests
+ from datetime import datetime, timedelta
+ import json
+ 
+-from ..record_types import RideStatus, DriverStatus, DriverState, Location, RideInformation, RideWaitInfo
++from ..record_types import *
+ 
+ base_url = 'http://127.0.0.1:5000/'
+ 
+@@ -93,7 +93,8 @@ class App():
+         ride_wait_times = self._get_ride_wait_times()
+         if save_dataset:
+             self._save_dataset(ride_infos, ride_wait_times)
+-        return self.get_outputs(driver_allocations, ride_infos, ride_wait_times)
++        estimated_ride_wait_times = self._get_estimated_times(ride_infos)
++        return self.get_outputs(driver_allocations, ride_infos, ride_wait_times, estimated_ride_wait_times)
+ 
+     # Allocate drivers
+     def _allocate_drivers(self):
+@@ -194,8 +195,19 @@ class App():
+         content = {'info': info, 'file_name': file_name}
+         requests.post(url, json=content)
+ 
++    # Client to get estimated wait times
++    def _get_estimated_times(self, ride_infos):
++        for ri in ride_infos:
++            url = base_url + 'driver-request/get_driver_by_id'
++            driver_info = requests.post(url, json={'driver_id': ri['driver_id']})
++            ri['driver_info'] = driver_info.json()
++        url = base_url + 'learning-request/get_estimated_times'
++        response =  requests.post(url, json=ride_infos)
++        # print(response.json())
++        return response.json()
++
+     # Parsing data for main programm
+-    def get_outputs(self, das, ris, rwts):
++    def get_outputs(self, das, ris, rwts, erwts):
+         driver_allocations = []
+         for da in das:
+             da['state'] = DriverState(da['state'])
+@@ -217,7 +229,11 @@ class App():
+             rwt['location'] = Location.from_dict(rwt['location'])
+             ride_wait_time = RideWaitInfo.from_dict(rwt)
+             ride_wait_times.append(ride_wait_time)
+-        return driver_allocations, ride_infos, ride_wait_times
++        estimated_ride_wait_times = []
++        for erwt in erwts:
++            estimated_ride_wait_time = EstimatedRideWaitInfo.from_dict(erwt)
++            estimated_ride_wait_times.append(estimated_ride_wait_time)
++        return driver_allocations, ride_infos, ride_wait_times, estimated_ride_wait_times
+ 
+ 
+ if __name__ == "__main__":
+diff --git a/soa_app_ml/soa_model.obj b/soa_app_ml/soa_model.obj
+new file mode 100755
+index 0000000..5c92797
+Binary files /dev/null and b/soa_app_ml/soa_model.obj differ
+diff --git a/soa_app_data/wait_time_soa_app.csv b/soa_app_ml/wait_time_soa_app.csv
+index 2bb7d6e..1f8f7dc 100755
+--- a/soa_app_data/wait_time_soa_app.csv
++++ b/soa_app_ml/wait_time_soa_app.csv
+@@ -97,51 +97,61 @@ ride_id,wait_duration
+ 95,16476.938
+ 99,17485.489
+ 97,16980.989
+-0,89.577
+-2,27212.529
+-3,27506.441
+-6,28549.047
+-4,27866.178
+-5,28188.684
+-11,30219.298
+-14,31275.976
+-13,30906.594
+-16,32032.865
+-17,32542.158
+-19,33261.707
+-20,33689.407
+-22,34491.232
+-24,35362.605
+-25,35778.755
+-27,36935.67
+-28,37370.527
+-29,37817.825
+-31,38590.516
+-35,40005.676
+-38,41294.055
+-43,43420.91
+-46,44678.81
+-51,46780.662
+-53,47613.255
+-54,48115.755
+-57,49433.104
+-58,49918.956
+-62,51913.89
+-64,52819.32
+-68,54634.916
+-67,54159.195
+-69,55122.035
+-71,56100.078
+-75,58025.253
+-77,58940.854
+-79,59846.594
+-81,60778.126
+-82,61310.535
+-84,62251.596
+-86,63287.042
+-88,64299.596
+-89,64828.576
+-90,65341.309
+-94,67276.996
+-93,66785.501
+-95,67833.302
++0,96.02
++2,646.719
++3,851.719
++6,1534.497
++4,1084.832
++5,1286.937
++11,3034.97
++14,3776.232
++13,3536.658
++16,4343.592
++0,88.466
++2,64500.913
++3,64812.456
++6,65718.156
++4,65114.012
++5,65429.591
++11,67193.587
++14,68133.203
++13,67794.299
++16,69158.877
++17,69719.56
++19,70757.696
++20,71234.769
++22,72119.529
++24,73063.004
++25,73546.771
++27,74524.251
++28,75021.123
++29,75560.013
++31,76570.447
++35,78590.117
++38,80194.385
++43,82894.949
++46,84543.476
++51,87505.982
++53,90986.978
++54,92493.858
++57,95407.429
++58,96509.985
++62,100561.523
++64,102817.05
++68,108598.169
++67,107528.172
++69,109342.886
++71,110788.947
++75,113767.757
++77,115421.564
++79,117679.295
++81,119383.15
++82,120316.469
++84,122181.72
++86,123811.73
++88,125454.492
++89,126261.37
++90,127111.253
++94,130513.679
++93,129730.711
++95,131451.446

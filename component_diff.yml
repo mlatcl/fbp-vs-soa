@@ -1,0 +1,109 @@
+insurance_claims:
+    - paradigm: fbp
+      from: min
+      to: data
+      changed:
+          - App
+      new: null
+    - paradigm: fbp
+      from: data
+      to: ml
+      changed:
+          - App
+      new:
+          - PredictClaimComplexity
+    - paradigm: soa
+      from: min
+      to: data
+      changed:
+          - App
+      new:
+          - claims.py:save_claims
+          - data/claims.py:save_claims
+    - paradigm: soa
+      from: data
+      to: ml
+      changed:
+          - claim.py:create_app
+          - learning.py:predict_claims_complexity
+      new:
+          - data/claims.py:get_claims_info
+          - data/learning.py:get_claims_info
+          - predict/learning.py:predict_claims_complexity
+mblogger:
+    - paradigm: fbp
+      from: min
+      to: data
+      changed:
+        - App
+      new:
+        - PersonalDictionaryStream
+        - BigramWeightsStream
+        - ProcessPosts
+    - paradigm: fbp
+      from: data
+      to: ml
+      changed:
+        - App
+      new:
+        - GeneratePostsInputStream
+        - GeneratedPostsStream
+        - GeneratedPosts
+    - paradigm: soa
+      from: min
+      to: data
+      changed:
+        - post.py:create_posts
+      new:
+        - data/words.py:update_bigrams
+        - data/words.py:update_personal_directory
+        - data/schema.sql:PersonalDictionaries
+        - data/schema.sql:Bigrams
+    - paradigm: soa
+      from: data
+      to: ml
+      changed:
+        - data/post.py:create_post
+        - App
+      new:
+        - data/post.py:get_generated_posts
+        - data/post.py:generate_post
+        - post.py:get_generated_posts
+        - post.py:generate_post
+ride_allocation:
+    - paradigm: fbp
+      from: min
+      to: data
+      changed:
+        - App
+      new: null
+    - paradigm: fbp
+      from: data
+      to: ml
+      changed:
+        - App
+      new:
+        - EstimatedRideWaitTimeStream
+        - EstimateRideWaitTime
+    - paradigm: soa
+      from: min
+      to: data
+      changed:
+        - create_app
+        - App
+      new:
+        - data/driver.py:get_driver_data_to_save
+        - data_manager.py:get_ride_data_to_save
+        - data_manager.py:get_wait_times_data_to_save
+        - data_manager.py:save_data_to_file
+        - driver.py:get_driver_data_to_save
+    - paradigm: soa
+      from: data
+      to: ml
+      changed:
+        - create_app
+        - App
+      new:
+        - data/driver.py:get_driver_by_id
+        - driver.py:get_driver_by_id
+        - learning.py:get_estimated_times

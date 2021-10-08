@@ -1,0 +1,113 @@
+diff --git a/soa_app_min/__pycache__/soa_app_min.cpython-38.pyc b/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc
+similarity index 75%
+rename from soa_app_min/__pycache__/soa_app_min.cpython-38.pyc
+rename to soa_app_data/__pycache__/soa_app_data.cpython-38.pyc
+index fe10ce1..2801a71 100755
+Binary files a/soa_app_min/__pycache__/soa_app_min.cpython-38.pyc and b/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc differ
+diff --git a/soa_app_min/flaskr/README.md b/soa_app_data/flaskr/README.md
+index d11f3e5..a63c3d6 100755
+--- a/soa_app_min/flaskr/README.md
++++ b/soa_app_data/flaskr/README.md
+@@ -5,9 +5,9 @@
+ # Running the application
+ 1. Requirements must be installed in the environment - pip3 install -r requirements.txt
+ 2. Following this tutorial - https://flask.palletsprojects.com/en/1.1.x/tutorial/factory/
+-Run next commands in console in the project path fbp-vs-soa/mblogger/soa_app_min/
++Run next commands in console in the project path fbp-vs-soa/mblogger/soa_app_data/
+     * $ export FLASK_APP=flaskr
+     * $ export FLASK_ENV=development
+     * $ flask init-db
+     * $ flask run
+-3. Run the main file of the fbp-vs-soa/mblogger project passing "soa_app_min" as a parameter
++3. Run the main file of the fbp-vs-soa/mblogger project passing "soa_app_data" as a parameter
+diff --git a/soa_app_min/flaskr/data/schema.sql b/soa_app_data/flaskr/data/schema.sql
+index 1ac05a7..bc44375 100755
+--- a/soa_app_min/flaskr/data/schema.sql
++++ b/soa_app_data/flaskr/data/schema.sql
+@@ -1,5 +1,7 @@
+ DROP TABLE IF EXISTS Follows;
+ DROP TABLE IF EXISTS Posts;
++DROP TABLE IF EXISTS PersonalDictionaries;
++DROP TABLE IF EXISTS Bigrams;
+ 
+ CREATE TABLE Follows(
+   active_author INTEGER NOT NULL,
+@@ -14,3 +16,16 @@ CREATE TABLE Posts(
+   text TEXT NOT NULL,
+   time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+ );
++
++CREATE TABLE PersonalDictionaries(
++  user_id INTEGER NOT NULL,
++  word TEXT NOT NULL,
++  primary key(user_id, word)
++);
++
++CREATE TABLE Bigrams(
++  first_word TEXT NOT NULL,
++  second_word TEXT NOT NULL,
++  weight INTEGER NOT NULL,
++  primary key(first_word, second_word)
++);
+diff --git a/soa_app_data/flaskr/data/words.py b/soa_app_data/flaskr/data/words.py
+new file mode 100755
+index 0000000..7b20c5f
+--- /dev/null
++++ b/soa_app_data/flaskr/data/words.py
+@@ -0,0 +1,32 @@
++from .db import get_db
++
++POST_START_WORD = "^"
++
++
++# Identify bigrams in post and save them in db
++def update_bigrams(post):
++    db = get_db()
++    text = post['text']
++    words = text.split(" ")
++    words = [word for word in words if word]
++    for bigram in zip([POST_START_WORD, *words], words):
++        sql = 'INSERT INTO Bigrams (first_word, second_word, weight) VALUES (?, ?, 1) ' \
++              'ON CONFLICT(first_word, second_word) DO UPDATE SET weight = weight + 1'
++        values = [bigram[0], bigram[1]]
++        db.execute(sql, values)
++        db.commit()
++
++
++# Add words used in a post to the post author's dictionary
++def update_personal_directory(post):
++    db = get_db()
++    user_id = post['author_id']
++    text = post['text']
++    words = text.split(' ')
++    for word in words:
++        sql = 'INSERT INTO PersonalDictionaries (user_id, word) VALUES (?, ?) ON CONFLICT(user_id, word) ' \
++              'DO UPDATE SET word = ?'
++        values = [user_id, word, word]
++        db.execute(sql, values)
++        db.commit()
++
+diff --git a/soa_app_min/flaskr/post.py b/soa_app_data/flaskr/post.py
+index 9f8532f..f52227f 100755
+--- a/soa_app_min/flaskr/post.py
++++ b/soa_app_data/flaskr/post.py
+@@ -1,5 +1,6 @@
+ from flask import (Blueprint, request, make_response, jsonify)
+ from .data import post
++from .data import words
+ 
+ bp = Blueprint('post', __name__, url_prefix='/post-request')
+ 
+@@ -10,6 +11,8 @@ def create_posts():
+     res = {}
+     req = request.get_json()
+     for r in req:
++        words.update_bigrams(r)
++        words.update_personal_directory(r)
+         affected = post.create_post(r)
+     res['msg'] = 'New posts created = ' + str(affected)
+     res = make_response(jsonify(res), 200)
+diff --git a/soa_app_min/soa_app_min.py b/soa_app_data/soa_app_data.py
+similarity index 100%
+rename from soa_app_min/soa_app_min.py
+rename to soa_app_data/soa_app_data.py

@@ -1,0 +1,254 @@
+diff --git a/fbp_app_data/__init__.py b/fbp_app_ml/__init__.py
+index 6218f5b..9f10399 100755
+--- a/fbp_app_data/__init__.py
++++ b/fbp_app_ml/__init__.py
+@@ -1 +1 @@
+-from .fbp_app_data import App
+\ No newline at end of file
++from .fbp_app_ml import App
+diff --git a/fbp_app_data/__pycache__/__init__.cpython-38.pyc b/fbp_app_ml/__pycache__/__init__.cpython-38.pyc
+index efa6c05..7b85338 100755
+Binary files a/fbp_app_data/__pycache__/__init__.cpython-38.pyc and b/fbp_app_ml/__pycache__/__init__.cpython-38.pyc differ
+diff --git a/fbp_app_data/__pycache__/app.cpython-38.pyc b/fbp_app_ml/__pycache__/app.cpython-38.pyc
+index 7e201ad..a7893d1 100755
+Binary files a/fbp_app_data/__pycache__/app.cpython-38.pyc and b/fbp_app_ml/__pycache__/app.cpython-38.pyc differ
+diff --git a/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc b/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc
+deleted file mode 100755
+index 9cb483a..0000000
+Binary files a/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc and /dev/null differ
+diff --git a/fbp_app_ml/__pycache__/fbp_app_ml.cpython-38.pyc b/fbp_app_ml/__pycache__/fbp_app_ml.cpython-38.pyc
+new file mode 100755
+index 0000000..75f9593
+Binary files /dev/null and b/fbp_app_ml/__pycache__/fbp_app_ml.cpython-38.pyc differ
+diff --git a/fbp_app_ml/__pycache__/text_generator.cpython-38.pyc b/fbp_app_ml/__pycache__/text_generator.cpython-38.pyc
+new file mode 100755
+index 0000000..ad51044
+Binary files /dev/null and b/fbp_app_ml/__pycache__/text_generator.cpython-38.pyc differ
+diff --git a/fbp_app_data/fbp_app_data.py b/fbp_app_ml/fbp_app_ml.py
+similarity index 77%
+rename from fbp_app_data/fbp_app_data.py
+rename to fbp_app_ml/fbp_app_ml.py
+index cadd3ea..c608aea 100755
+--- a/fbp_app_data/fbp_app_data.py
++++ b/fbp_app_ml/fbp_app_ml.py
+@@ -1,10 +1,15 @@
+ from typing import List, Dict, Callable, Tuple
+ from datetime import datetime
+ 
++import random
++import itertools as it
++
+ from flowpipe import Graph, INode, Node, InputPlug, OutputPlug
+ from mblogger.record_types import *
++from .text_generator import TextGenerator
+ 
+ POST_START_WORD = "^"
++PERSONAL_WORDS_WEIGHT = 10.0
+ 
+ 
+ class Stream(INode):
+@@ -73,6 +78,15 @@ class PostsStream(Stream):
+         return {'posts': self.data}
+ 
+ 
++class GeneratePostsInputStream(Stream):
++    def __init__(self, **kwargs):
++        super(GeneratePostsInputStream, self).__init__(**kwargs)
++        OutputPlug('generate_posts_input', self)
++
++    def compute(self) -> Dict:
++        return {'generate_posts_input': self.data}
++
++
+ ############ internal streams ############
+ class PersonalDictionaryStream(Stream):
+     def __init__(self, **kwargs):
+@@ -130,6 +144,17 @@ class TimelinesStream(Stream):
+         return {'timelines': self.data}
+ 
+ 
++class GeneratedPostsStream(Stream):
++    def __init__(self, **kwargs):
++        super(GeneratedPostsStream, self).__init__(**kwargs)
++        InputPlug('generated_posts', self)
++        OutputPlug('generated_posts', self)
++
++    def compute(self, generated_posts: List) -> Dict:
++        self.add_data(generated_posts)
++        return {'generated_posts': self.data}
++
++
+ ############ processing nodes ##############
+ 
+ class UpdateFollows(INode):
+@@ -228,6 +253,37 @@ class ProcessPosts(INode):
+         return {'bigram_weights': bigram_weights, 'personal_dictionaries': personal_dicts}
+ 
+ 
++class GeneratedPosts(INode):
++    def __init__(self, **kwargs):
++        super(GeneratedPosts, self).__init__(**kwargs)
++        InputPlug('generate_posts_input', self)
++        InputPlug('personal_dictionaries', self)
++        InputPlug('bigram_weights', self)
++        OutputPlug('generated_posts', self)
++
++    def compute(self,
++                generate_posts_input: List[GeneratePostInput],
++                personal_dictionaries: List[PersonalDictionary],
++                bigram_weights: List[BigramWithWeight]) -> Dict:
++
++        personal_dictionaries_dict = {x.user_id: x.words for x in personal_dictionaries}
++
++        text_generator = TextGenerator(bigram_weights)
++        generated_posts = []
++        for input_record in generate_posts_input:
++            user_id = input_record.user_id
++            if user_id not in personal_dictionaries_dict:
++                # we don't have posts from this user yet, skip
++                continue
++
++            personal_words = personal_dictionaries_dict[user_id]
++            text = text_generator.generate(personal_words, input_record.length)
++            post = Post(post_id=random.getrandbits(64), author_id=user_id, text=text, timestamp=datetime.now())
++            generated_posts.append(post)
++        
++        return {"generated_posts": generated_posts}
++
++
+ class App():
+     def __init__(self):
+         self._build()
+@@ -237,19 +293,20 @@ class App():
+         self.graph.evaluate()
+         return self.get_outputs()
+ 
+-    def add_data(self, followings, followers, follow_requests, posts):
++    def add_data(self, followings, followers, follow_requests, posts, generate_posts_input):
+         self.input_streams['current_followings_stream'].add_data(followings, key=lambda x: x.user_id)
+         self.input_streams['current_followers_stream'].add_data(followers, key=lambda x: x.user_id)
+         self.input_streams['follow_request_stream'].add_data(follow_requests)
+         self.input_streams['posts_stream'].add_data(posts, key=lambda x: x.post_id)
+-
++        self.input_streams['generate_posts_input_stream'].add_data(generate_posts_input)
+ 
+     def get_outputs(self):
+         followers = self.output_streams["updated_followers_stream"].get_data(drop=True)
+         followings = self.output_streams["updated_followings_stream"].get_data(drop=True)
+         timelines = self.output_streams["timelines_stream"].get_data(drop=True)
++        generated_posts = self.output_streams["generated_posts_stream"].get_data(drop=True)
+ 
+-        return followers, followings, timelines
++        return followers, followings, timelines, generated_posts
+ 
+ 
+     def _build(self) -> Graph:
+@@ -260,11 +317,13 @@ class App():
+         current_followings_stream = CurrentFollowingsStream(graph=graph)
+         current_followers_stream = CurrentFollowersStream(graph=graph)
+         posts_stream = PostsStream(graph=graph)
++        generate_posts_input_stream = GeneratePostsInputStream(graph=graph)
+         self.input_streams = {
+             'follow_request_stream': follow_request_stream,
+             'current_followings_stream': current_followings_stream,
+             'current_followers_stream': current_followers_stream,
+-            'posts_stream': posts_stream
++            'posts_stream': posts_stream,
++            'generate_posts_input_stream': generate_posts_input_stream
+         }
+ 
+         # inner streams
+@@ -275,10 +334,12 @@ class App():
+         updated_followings_stream = UpdatedFollowingsStream(graph=graph)
+         updated_followers_stream = UpdatedFollowersStream(graph=graph)
+         timelines_stream = TimelinesStream(graph=graph)
++        generated_posts_stream = GeneratedPostsStream(graph=graph)
+         self.output_streams = {
+             'updated_followings_stream': updated_followings_stream,
+             'updated_followers_stream': updated_followers_stream,
+-            'timelines_stream': timelines_stream
++            'timelines_stream': timelines_stream,
++            'generated_posts_stream': generated_posts_stream,
+         }
+ 
+         # processing nodes
+@@ -286,7 +347,10 @@ class App():
+         build_timeline = BuildTimeline(graph=graph)
+ 
+         process_posts = ProcessPosts(graph=graph)
++        generate_posts = GeneratedPosts(graph=graph)
+ 
++
++        # wiring up application
+         follow_request_stream.outputs["follow_requests"] >> update_follows.inputs["follow_requests"]
+         current_followers_stream.outputs["followers"] >> update_follows.inputs["followers"]
+         current_followings_stream.outputs["followings"] >> update_follows.inputs["followings"]
+@@ -302,6 +366,11 @@ class App():
+         process_posts.outputs["personal_dictionaries"] >> personal_dictionaries_stream.inputs["personal_dictionaries"]
+         process_posts.outputs["bigram_weights"] >> bigram_weights_stream.inputs["bigram_weights"]
+ 
++        generate_posts_input_stream.outputs["generate_posts_input"] >> generate_posts.inputs["generate_posts_input"]
++        personal_dictionaries_stream.outputs["personal_dictionaries"] >> generate_posts.inputs["personal_dictionaries"]
++        bigram_weights_stream.outputs["bigram_weights"] >> generate_posts.inputs["bigram_weights"]
++        generate_posts.outputs["generated_posts"] >> generated_posts_stream.inputs["generated_posts"]
++
+         self.graph = graph
+ 
+ 
+diff --git a/fbp_app_ml/text_generator.py b/fbp_app_ml/text_generator.py
+new file mode 100755
+index 0000000..8e7f1b5
+--- /dev/null
++++ b/fbp_app_ml/text_generator.py
+@@ -0,0 +1,51 @@
++import random
++import itertools as it
++from typing import List, Dict
++
++from mblogger.record_types import BigramWithWeight
++
++POST_START_WORD = "^"
++PERSONAL_WORDS_WEIGHT = 10.0
++
++
++class TextGenerator:
++    def __init__(self, bigram_weights: List[BigramWithWeight]):
++        self._create_bigram_dicts(bigram_weights)
++
++    def _create_bigram_dicts(self, bigram_weights):
++        self._bigrams_dict = {}
++        self._bigram_weights_dict = {}
++
++        for bigram_weight in bigram_weights:
++            lhs = bigram_weight.first_word
++            rhs = bigram_weight.second_word
++
++            if lhs not in self._bigrams_dict:
++                self._bigrams_dict[lhs] = set()
++            self._bigrams_dict[lhs].add(rhs)
++
++            if (lhs, rhs) not in self._bigram_weights_dict:
++                self._bigram_weights_dict[lhs, rhs] = 0
++            self._bigram_weights_dict[lhs, rhs] += bigram_weight.weight
++
++    def _word_generator(self, personal_words):
++        current_word = POST_START_WORD
++
++        while True:
++            next_words = list(self._bigrams_dict.get(current_word, []))
++            next_weights = [
++                (PERSONAL_WORDS_WEIGHT if next_word in personal_words else 1.0)
++                * self._bigram_weights_dict[current_word, next_word]
++                for next_word in next_words
++            ]
++            if not next_words:
++                return
++
++            next_word = random.choices(next_words, weights=next_weights)[0]
++            current_word = next_word
++            yield current_word
++
++    def generate(self, personal_words: Dict, word_count: int):
++        text = " ".join(it.islice(self._word_generator(personal_words), word_count))
++
++        return text
