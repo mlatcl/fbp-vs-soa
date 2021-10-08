@@ -51,3 +51,17 @@ To write metrics data to a CSV file:
 ```
 ./code_metrics.sh file_name_goes_here.csv
 ```
+
+We also define and collect a metric "Number of Affected Components", which we understand as the number of components that were created or changed between any two moments in development. We collect it by generating a diff between two stages with:
+
+```
+git diff --no-index <app_name>/<stage1> <app_name>/<stage2>
+```
+
+for example
+
+```
+git diff --no-index mblogger/fbp_app_data mblogger/fbp_app_ml
+```
+
+All diffs are collected in "<app_name>/diffs" folder, and overall metric is available in component_diff.yml in the root of the project.
