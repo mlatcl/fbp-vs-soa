@@ -36,3 +36,8 @@ requests==2.25.1
 # Plots
 matplotlib==3.4.2
 seaborn==0.11.1
+
+# Metrics notebook
+PyYAML==5.4.1
+jupyter==1.0.0
+numpy==1.21.1
