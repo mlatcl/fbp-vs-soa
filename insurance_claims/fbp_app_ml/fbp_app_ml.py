@@ -295,9 +295,6 @@ class App():
         self.new_claims_stream = NewClaimsStream(graph=graph)
 
         # inner streams
-        # claim_values_stream = ClaimValueStream(graph=graph)
-        # high_value_claims_stream = HighValueClaimsStream(graph=graph)
-        # low_value_claims_stream = LowValueClaimsStream(graph=graph)
         simple_claims_stream = SimpleClaimsStream(graph=graph)
         complex_claims_stream = ComplexClaimsStream(graph=graph)
 
@@ -305,9 +302,6 @@ class App():
         self.claim_payouts_stream = ClaimPayoutStream(graph=graph)
 
         # processing nodes
-        #calculate_claim_value = CalculateClaimValue(graph=graph)
-        #classify_claim_value = ClassifyClaimValue(graph=graph)
-        #classify_claim_complexity = ClassifyClaimComplexity(graph=graph)
         calculate_simple_claim_payout = CalculateSimpleClaimsPayout(graph=graph)
         calculate_complex_claim_payout = CalculateComplexClaimsPayout(graph=graph)
 
@@ -317,19 +311,6 @@ class App():
         predict_claim_complexity.outputs["simple_claims"] >> simple_claims_stream.inputs["simple_claims"]
         predict_claim_complexity.outputs["complex_claims"] >> complex_claims_stream.inputs["complex_claims"]
 
-        # ML replaces all of that logic
-        # self.new_claims_stream.outputs["new_claims"] >> calculate_claim_value.inputs["claims"]
-        # calculate_claim_value.outputs["claim_values"] >> claim_values_stream.inputs["claim_values"]
-
-        # self.new_claims_stream.outputs["new_claims"] >> classify_claim_value.inputs["claims"]
-        # claim_values_stream.outputs["claim_values"] >> classify_claim_value.inputs["claim_values"]
-        # classify_claim_value.outputs["low_value_claims"] >> low_value_claims_stream.inputs["low_value_claims"]
-        # classify_claim_value.outputs["high_value_claims"] >> high_value_claims_stream.inputs["high_value_claims"]
-
-        # high_value_claims_stream.outputs["high_value_claims"] >> complex_claims_stream.inputs["high_value_claims"]
-        # low_value_claims_stream.outputs["low_value_claims"] >> classify_claim_complexity.inputs["claims"]
-        # classify_claim_complexity.outputs["simple_claims"] >> simple_claims_stream.inputs["simple_claims"]
-        # classify_claim_complexity.outputs["complex_claims"] >> complex_claims_stream.inputs["complex_claims"]
 
         simple_claims_stream.outputs["simple_claims"] >> calculate_simple_claim_payout.inputs["simple_claims"]
         complex_claims_stream.outputs["complex_claims"] >> calculate_complex_claim_payout.inputs["complex_claims"]
