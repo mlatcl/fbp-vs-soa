@@ -7,6 +7,7 @@ from playlist_builder.record_types import *
 from playlist_builder import fbp_app_min
 from playlist_builder import fbp_app_data
 from playlist_builder import fbp_app_ml
+from playlist_builder.soa_app_min import soa_app_min
 
 all_apps = {
     "fbp_app_min": {
@@ -20,6 +21,10 @@ all_apps = {
     "fbp_app_ml": {
         "description": "FBP app that only recommends top grossing movies.",
         "create_app": (lambda: fbp_app_ml.App())
+    },
+    "soa_app_min": {
+        "description": "SOA app that only provides basic functionality.",
+        "create_app": (lambda: soa_app_min.App())
     }
 }
 
