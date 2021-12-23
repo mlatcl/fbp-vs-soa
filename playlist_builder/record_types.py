@@ -17,6 +17,7 @@ class Movie:
         return self.genres.split("|")
 
 
+@dataclass_json
 @dataclass
 class PlaylistRequest:
     id: int

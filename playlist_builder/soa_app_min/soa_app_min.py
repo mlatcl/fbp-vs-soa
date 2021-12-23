@@ -11,7 +11,7 @@ class App():
         return []
 
     def add_data(self, movies, playlist_requests):
-        self._add_movies(movies)
+        # self._add_movies(movies)
         self._add_playlist_requests(playlist_requests)
 
     def _add_movies(self, movies):
@@ -21,7 +21,7 @@ class App():
             print(response.json())
 
     def _add_playlist_requests(self, playlist_requests):
-        url = base_url + 'playlist_request/add'
-        # for playlist_request in playlist_requests:
-        #     response = requests.post(url, json=playlist_request.to_dict())
-        #     print(response.json())
+        url = base_url + 'playlist/request/add'
+        for playlist_request in playlist_requests:
+            response = requests.post(url, json=playlist_request.to_dict())
+            print(response.json())

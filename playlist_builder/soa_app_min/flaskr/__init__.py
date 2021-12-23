@@ -35,4 +35,7 @@ def create_app(test_config=None):
     from . import movie
     app.register_blueprint(movie.bp)
 
+    from . import playlist
+    app.register_blueprint(playlist.bp)
+
     return app
