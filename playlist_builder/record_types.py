@@ -25,6 +25,7 @@ class PlaylistRequest:
     count: int
 
 
+@dataclass_json
 @dataclass
 class MovieList:
     request_id: int

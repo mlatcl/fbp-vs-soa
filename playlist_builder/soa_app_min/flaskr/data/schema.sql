@@ -12,5 +12,13 @@ CREATE TABLE Movies(
 CREATE TABLE PlaylistRequests(
   id INTEGER PRIMARY KEY,
   genre TEXT NOT NULL,
-  movie_count INTEGER NOT NULL
+  movie_count INTEGER NOT NULL,
+  is_processed INTEGER DEFAULT 0
 );
+
+CREATE TABLE Playlists(
+  request_id INTEGER,
+  movie_id INTEGER,
+  FOREIGN KEY(request_id) REFERENCES PlaylistRequests(id),
+  FOREIGN KEY(movie_id) REFERENCES Movies(movie_id)
+)
