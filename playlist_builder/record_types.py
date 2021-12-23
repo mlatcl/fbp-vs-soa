@@ -9,8 +9,12 @@ from dataclasses_json import dataclass_json
 class Movie:
     movie_title: str
     title_year: int
-    genres: List[str]
+    genres: str
     gross: int
+
+    @property
+    def genres_list(self) -> List[str]:
+        return self.genres.split("|")
 
 
 @dataclass

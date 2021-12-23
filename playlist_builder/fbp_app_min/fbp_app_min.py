@@ -100,6 +100,7 @@ class FilterMovies(INode):
         all_filtered_movies = []
         for request in requests:
             filtered_movies = [m for m in movies if request.genre in m.genres]
+            shuffle(filtered_movies)
             all_filtered_movies.append(MovieList(request_id=request.id, movies=filtered_movies))
 
         return {'filtered_movies': all_filtered_movies}
@@ -136,7 +137,8 @@ class BuildPlaylist(INode):
             filtered_per_request = next(f for f in filtered_movies if request.id == f.request_id)
             bonus_per_request = next(b for b in bonus_movies if request.id == b.request_id)
             
-            playlist_movies = shuffle(filtered_per_request.movies + bonus_per_request.movies)
+            playlist_movies = bonus_per_request.movies + filtered_per_request.movies
+            playlist_movies = playlist_movies[:request.count]
             playlists.append(MovieList(request_id=request.id, movies=playlist_movies))
 
         return {'playlists': playlists}
