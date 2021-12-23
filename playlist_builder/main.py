@@ -6,6 +6,7 @@ from playlist_builder.record_types import *
 
 from playlist_builder import fbp_app_min
 from playlist_builder import fbp_app_data
+from playlist_builder import fbp_app_ml
 
 all_apps = {
     "fbp_app_min": {
@@ -15,6 +16,10 @@ all_apps = {
     "fbp_app_data": {
         "description": "FBP app that collects genre statistics.",
         "create_app": (lambda: fbp_app_data.App())
+    },
+    "fbp_app_ml": {
+        "description": "FBP app that only recommends top grossing movies.",
+        "create_app": (lambda: fbp_app_ml.App())
     }
 }
 
@@ -43,7 +48,7 @@ all_genres = list(set(all_genres))
 n_requests = 10
 all_requests = []
 for i in range(n_requests):
-    r = PlaylistRequest(i, random.choice(all_genres), 1)
+    r = PlaylistRequest(i, random.choice(all_genres), 5)
     all_requests.append(r)
 
 app_data = all_apps[sys.argv[1]]
@@ -52,4 +57,5 @@ app = app_data["create_app"]()
 app.add_data(all_movies, all_requests)
 playlists = app.evaluate()
 
-print(playlists)
+for p in playlists:
+    print(p)
