@@ -5,11 +5,16 @@ import csv
 from playlist_builder.record_types import *
 
 from playlist_builder import fbp_app_min
+from playlist_builder import fbp_app_data
 
 all_apps = {
     "fbp_app_min": {
         "description": "FBP app that only provides basic functionality.",
         "create_app": (lambda: fbp_app_min.App())
+    },
+    "fbp_app_data": {
+        "description": "FBP app that collects genre statistics.",
+        "create_app": (lambda: fbp_app_data.App())
     }
 }
 
@@ -28,6 +33,7 @@ import pathlib
 directory_path = pathlib.Path(__file__).parent.resolve()
 with open(directory_path.joinpath('movies.csv'), 'r') as f:
     reader = csv.reader(f)
+    next(reader)  # skip header
     for row in reader:
         movie = Movie(row[0], row[1], row[2], row[3])
         all_genres.extend(movie.genres_list)

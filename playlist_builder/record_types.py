@@ -28,3 +28,9 @@ class PlaylistRequest:
 class MovieList:
     request_id: int
     movies: List[Movie]
+
+
+@dataclass
+class GenreStats:
+    genre: str
+    quantiles: List[float]
