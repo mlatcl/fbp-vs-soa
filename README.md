@@ -1,13 +1,13 @@
 This repo contains code for comparison flow-based programming (FBP) and software services (SOA) in the context of machine learning deployment.
 
-The repository contains three applications: Ride Allocation, MBlogger and Insurance Claims. Each app is implemented six times, these implementations represent the same software at different stages of development using one of the aforementioned paradigms. Here is the complete list:
+The repository contains four applications: Ride Allocation, MBlogger, Insurance Claims and Playlist Builder. Each app is implemented six times, these implementations represent the same software at different stages of development using one of the aforementioned paradigms. Here is the complete list:
 
 * __fbp_app_min__ - basic functionality implemented with FBP
-* __fbp_app_data__ - same as above, plus dataset collection
+* __fbp_app_data__ - same as above, plus data collection
 * __fbp_app_ml__ - same as above, plus deployment of a trained ML model
 
 * __soa_app_min__ - basic functionality implemented with SOA
-* __soa_app_data__ - same as above, plus dataset collection
+* __soa_app_data__ - same as above, plus data collection
 * __soa_app_ml__ - same as above, plus deployment of a trained ML model
 
 Other source files are used to define common data types and generate some input data.
