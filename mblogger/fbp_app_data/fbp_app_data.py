@@ -198,31 +198,19 @@ class ProcessPosts(INode):
 
         for post in posts:
             user_id = post.author_id
-            if user_id not in personal_dictionaries:
-                personal_dictionaries[user_id] = set()
+            personal_dictionaries.setdefault(user_id, set())
 
-            words = post.text.split(" ")
-            words = [word for word in words if word]
-            for word in words:
-                personal_dictionaries[user_id].add(word)
-
-            for bigram in zip([POST_START_WORD, *words], words):
-                new_bigrams.append(bigram)
+            words = [word for word in post.text.split(" ") if word]
+            personal_dictionaries[user_id].update(words)
+            new_bigrams.extend(zip([POST_START_WORD, *words], words))
 
         bigram_weights_dict = {}
 
         for lhs, rhs in new_bigrams:
-            if (lhs, rhs) not in bigram_weights_dict:
-                bigram_weights_dict[lhs, rhs] = 0
+            bigram_weights_dict.setdefault((lhs, rhs), 0)
             bigram_weights_dict[lhs, rhs] += 1
 
-        bigram_weights = [
-            BigramWithWeight(
-                first_word=b[0],
-                second_word=b[1],
-                weight=bigram_weights_dict[b],
-            ) for b in bigram_weights_dict]
-
+        bigram_weights = [BigramWithWeight(b[0], b[1], bigram_weights_dict[b],) for b in bigram_weights_dict]
         personal_dicts = [PersonalDictionary(user_id=k, words=v) for k, v in personal_dictionaries.items()]
 
         return {'bigram_weights': bigram_weights, 'personal_dictionaries': personal_dicts}

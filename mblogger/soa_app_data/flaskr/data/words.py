@@ -18,14 +18,14 @@ def update_bigrams(post):
 
 
 # Add words used in a post to the post author's dictionary
-def update_personal_directory(post):
+def update_personal_dictionary(post):
     db = get_db()
     user_id = post['author_id']
     text = post['text']
     words = text.split(' ')
     for word in words:
-        sql = 'INSERT INTO PersonalDictionaries (user_id, word) VALUES (?, ?) ON CONFLICT(user_id, word) ' \
-              'DO UPDATE SET word = ?'
+        sql = 'INSERT INTO PersonalDictionaries (user_id, word) VALUES (?, ?) ' \
+              'ON CONFLICT(user_id, word) DO UPDATE SET word = ?'
         values = [user_id, word, word]
         db.execute(sql, values)
         db.commit()
