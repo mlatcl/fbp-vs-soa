@@ -8,6 +8,7 @@ from playlist_builder import fbp_app_min
 from playlist_builder import fbp_app_data
 from playlist_builder import fbp_app_ml
 from playlist_builder.soa_app_min import soa_app_min
+from playlist_builder.soa_app_data import soa_app_data
 
 all_apps = {
     "fbp_app_min": {
@@ -25,6 +26,10 @@ all_apps = {
     "soa_app_min": {
         "description": "SOA app that only provides basic functionality.",
         "create_app": (lambda: soa_app_min.App())
+    },
+    "soa_app_data": {
+        "description": "SOA app that collects genre statistics.",
+        "create_app": (lambda: soa_app_data.App())
     }
 }
 
