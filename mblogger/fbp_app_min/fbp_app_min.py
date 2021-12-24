@@ -117,7 +117,8 @@ class UpdateFollows(INode):
         OutputPlug('followings', self)
         OutputPlug('followers', self)
 
-    def compute(self, follow_requests: List[FollowRequest], followings: List[Tuple], followers: List[Tuple]) -> Dict:
+    def compute(self, follow_requests: List[FollowRequest],
+                followings: List[Tuple], followers: List[Tuple]) -> Dict:
         followings_as_dict = {x.user_id:x.followings for x in followings}
         followers_as_dict = {x.user_id:x.followers for x in followers}
 
@@ -132,9 +133,19 @@ class UpdateFollows(INode):
                 followings_as_dict[active].discard(passive)
                 followers_as_dict[passive].discard(active)
 
+        followings = [
+            FollowingsRecord(user_id=key, followings=value)
+            for key, value in followings_as_dict.items()
+        ]
+
+        followers = [
+            FollowersRecord(user_id=key, followers=value)
+            for key, value in followers_as_dict.items()
+        ]
+
         return {
-            'followings': [FollowingsRecord(user_id=key, followings=value) for key, value in followings_as_dict.items()],
-            'followers': [FollowersRecord(user_id=key, followers=value) for key, value in followers_as_dict.items()]
+            'followings': followings,
+            'followers': followers
         }
 
 
@@ -152,7 +163,10 @@ class BuildTimeline(INode):
             user_id = user_followings.user_id
             following_ids = user_followings.followings
 
-            posts_in_timeline = [post for post in posts if post.author_id in following_ids]
+            posts_in_timeline = [
+                post for post in posts
+                if post.author_id in following_ids
+            ]
             posts_in_timeline.sort(key=lambda p: p.timestamp)
 
             timeline = Timeline(user_id=user_id, posts=posts_in_timeline)
