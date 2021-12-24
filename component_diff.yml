@@ -107,3 +107,40 @@ ride_allocation:
         - data/driver.py:get_driver_by_id
         - driver.py:get_driver_by_id
         - learning.py:get_estimated_times
+playlist_builder:
+    - paradigm: fbp
+      from: min
+      to: data
+      changed:
+        - App
+      new:
+        - GenreStatsStream
+        - ComputeStatistics
+    - paradigm: fbp
+      from: data
+      to: ml
+      changed:
+        - BuildPlaylist
+        - App
+      new: null
+    - paradigm: soa
+      from: min
+      to: data
+      changed:
+        - App
+      new:
+        - data/movie.py:get_all_genres
+        - data/movie.py:get_gross
+        - data/movie.py:save_genre_stats
+        - movie.py:compute_stats
+        - data_manager.py:save_data_to_file
+        - driver.py:get_driver_data_to_save
+    - paradigm: soa
+      from: data
+      to: ml
+      changed:
+        - movie.py:build_playlist
+      new:
+        - data/movie.py:load_by_id
+        - data/movie.py:load_genre_stats
+        - learning.py:get_estimated_times

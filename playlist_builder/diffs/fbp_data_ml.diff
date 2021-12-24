@@ -1,0 +1,56 @@
+diff --git a/fbp_app_data/__init__.py b/fbp_app_ml/__init__.py
+index abbd520..9f10399 100755
+--- a/fbp_app_data/__init__.py
++++ b/fbp_app_ml/__init__.py
+@@ -1 +1 @@
+-from .fbp_app_data import App
++from .fbp_app_ml import App
+diff --git a/fbp_app_data/__pycache__/__init__.cpython-38.pyc b/fbp_app_ml/__pycache__/__init__.cpython-38.pyc
+index ebbcd3f..2416cbe 100755
+Binary files a/fbp_app_data/__pycache__/__init__.cpython-38.pyc and b/fbp_app_ml/__pycache__/__init__.cpython-38.pyc differ
+diff --git a/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc b/fbp_app_ml/__pycache__/fbp_app_ml.cpython-38.pyc
+similarity index 71%
+rename from fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc
+rename to fbp_app_ml/__pycache__/fbp_app_ml.cpython-38.pyc
+index b40ecf4..0570f10 100755
+Binary files a/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc and b/fbp_app_ml/__pycache__/fbp_app_ml.cpython-38.pyc differ
+diff --git a/fbp_app_data/fbp_app_data.py b/fbp_app_ml/fbp_app_ml.py
+similarity index 93%
+rename from fbp_app_data/fbp_app_data.py
+rename to fbp_app_ml/fbp_app_ml.py
+index aa83320..924674d 100755
+--- a/fbp_app_data/fbp_app_data.py
++++ b/fbp_app_ml/fbp_app_ml.py
+@@ -163,15 +163,22 @@ class BuildPlaylist(INode):
+         InputPlug('filtered_movies', self)
+         InputPlug('bonus_movies', self)
+         InputPlug('requests', self)
++        InputPlug('genre_stats', self)
+         OutputPlug('playlists', self)
+ 
+-    def compute(self, filtered_movies: List[MovieList], bonus_movies: List[MovieList], requests: List[PlaylistRequest]) -> Dict:
++    def compute(self, filtered_movies: List[MovieList], bonus_movies: List[MovieList], requests: List[PlaylistRequest], genre_stats: List[GenreStats]) -> Dict:
+         playlists = []
+         for request in requests:
+             filtered_per_request = next(f for f in filtered_movies if request.id == f.request_id)
+             bonus_per_request = next(b for b in bonus_movies if request.id == b.request_id)
+ 
+-            playlist_movies = bonus_per_request.movies + filtered_per_request.movies
++            playlist_movies = bonus_per_request.movies
++            for m in filtered_per_request.movies:
++                movie_genre_stats = [gs for gs in genre_stats if gs.genre in m.genres]
++                # if movie is in top quantile for all of its genres, include it
++                if all(float(m.gross) >= gs.quantiles[-1] for gs in movie_genre_stats):
++                    playlist_movies.append(m)
++
+             playlist_movies = playlist_movies[:request.count]
+             playlists.append(MovieList(request_id=request.id, movies=playlist_movies))
+ 
+@@ -238,6 +245,7 @@ class App():
+ 
+         movies_stream.outputs["movies"] >> compute_statistics.inputs["movies"]
+         compute_statistics.outputs["genre_stats"] >> genre_stats_stream.inputs["genre_stats"]
++        genre_stats_stream.outputs["genre_stats"] >> build_playlist.inputs["genre_stats"]
+ 
+         build_playlist.outputs["playlists"] >> playlist_stream.inputs["playlists"]
+ 

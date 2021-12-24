@@ -1,0 +1,116 @@
+diff --git a/fbp_app_min/__init__.py b/fbp_app_data/__init__.py
+index d6c6798..abbd520 100755
+--- a/fbp_app_min/__init__.py
++++ b/fbp_app_data/__init__.py
+@@ -1 +1 @@
+-from .fbp_app_min import App
++from .fbp_app_data import App
+diff --git a/fbp_app_min/__pycache__/__init__.cpython-38.pyc b/fbp_app_data/__pycache__/__init__.cpython-38.pyc
+index 9189686..ebbcd3f 100755
+Binary files a/fbp_app_min/__pycache__/__init__.cpython-38.pyc and b/fbp_app_data/__pycache__/__init__.cpython-38.pyc differ
+diff --git a/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc b/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc
+new file mode 100755
+index 0000000..b40ecf4
+Binary files /dev/null and b/fbp_app_data/__pycache__/fbp_app_data.cpython-38.pyc differ
+diff --git a/fbp_app_min/__pycache__/fbp_app_min.cpython-38.pyc b/fbp_app_min/__pycache__/fbp_app_min.cpython-38.pyc
+deleted file mode 100755
+index 2c9c4b2..0000000
+Binary files a/fbp_app_min/__pycache__/fbp_app_min.cpython-38.pyc and /dev/null differ
+diff --git a/fbp_app_min/fbp_app_min.py b/fbp_app_data/fbp_app_data.py
+similarity index 82%
+rename from fbp_app_min/fbp_app_min.py
+rename to fbp_app_data/fbp_app_data.py
+index eac28de..aa83320 100755
+--- a/fbp_app_min/fbp_app_min.py
++++ b/fbp_app_data/fbp_app_data.py
+@@ -1,7 +1,10 @@
+ from random import choice, shuffle
+ from typing import Callable, Dict, List
+ 
++import numpy as np
++
+ from flowpipe import INode, InputPlug, OutputPlug, Graph
++from numpy.lib.function_base import quantile
+ from playlist_builder.record_types import *
+ 
+ class Stream(INode):
+@@ -73,6 +76,15 @@ class BonusMovieStream(Stream):
+         self.add_data(bonus_movies, lambda x: x.request_id)
+         return {'bonus_movies': self.data}
+ 
++class GenreStatsStream(Stream):
++    def __init__(self, **kwargs):
++        super(GenreStatsStream, self).__init__(**kwargs)
++        InputPlug('genre_stats', self)
++        OutputPlug('genre_stats', self)
++
++    def compute(self, genre_stats: List[GenreStats]) -> Dict:
++        self.add_data(genre_stats, lambda x: x.genre)
++        return {'genre_stats': self.data}
+ 
+ ############ output streams ##############
+ 
+@@ -123,6 +135,28 @@ class BonusMovie(INode):
+         return {'bonus_movies': all_bonus_movies}
+ 
+ 
++class ComputeStatistics(INode):
++    def __init__(self, **kwargs):
++        super(ComputeStatistics, self).__init__(**kwargs)
++        InputPlug('movies', self)
++        OutputPlug('genre_stats', self)
++
++    def compute(self, movies: List[Movie]) -> Dict:
++        all_genres = [g for  m in movies for g in m.genres_list]
++        all_genres = list(set(all_genres))
++
++        points = np.array([0.25, 0.5, 0.75])
++
++        all_genre_stats = []
++        for genre in all_genres:
++            movies_of_genre = [m for m in movies if genre in m.genres]
++            movies_gross = np.array([m.gross for m in movies_of_genre], dtype=np.float64)
++            quantiles = np.quantile(movies_gross, points)
++            all_genre_stats.append(GenreStats(genre, quantiles))
++
++        return {'genre_stats': all_genre_stats}
++
++
+ class BuildPlaylist(INode):
+     def __init__(self, **kwargs):
+         super(BuildPlaylist, self).__init__(**kwargs)
+@@ -136,7 +170,7 @@ class BuildPlaylist(INode):
+         for request in requests:
+             filtered_per_request = next(f for f in filtered_movies if request.id == f.request_id)
+             bonus_per_request = next(b for b in bonus_movies if request.id == b.request_id)
+-            
++
+             playlist_movies = bonus_per_request.movies + filtered_per_request.movies
+             playlist_movies = playlist_movies[:request.count]
+             playlists.append(MovieList(request_id=request.id, movies=playlist_movies))
+@@ -176,6 +210,7 @@ class App():
+         # inner streams
+         filtered_movies_stream = FilteredMoviesStream(graph=graph)
+         bonus_movies_stream = BonusMovieStream(graph=graph)
++        genre_stats_stream = GenreStatsStream(graph=graph)
+ 
+         # output streams
+         playlist_stream = PlaylistStream(graph=graph)
+@@ -186,6 +221,7 @@ class App():
+         # processing nodes
+         filter_movies = FilterMovies(graph=graph)
+         bonus_movie = BonusMovie(graph=graph)
++        compute_statistics = ComputeStatistics(graph=graph)
+         build_playlist = BuildPlaylist(graph=graph)
+ 
+         movies_stream.outputs["movies"] >> filter_movies.inputs["movies"]
+@@ -200,6 +236,9 @@ class App():
+         bonus_movies_stream.outputs["bonus_movies"] >> build_playlist.inputs["bonus_movies"]
+         playlist_request_stream.outputs["new_requests"] >> build_playlist.inputs["requests"]
+ 
++        movies_stream.outputs["movies"] >> compute_statistics.inputs["movies"]
++        compute_statistics.outputs["genre_stats"] >> genre_stats_stream.inputs["genre_stats"]
++
+         build_playlist.outputs["playlists"] >> playlist_stream.inputs["playlists"]
+ 
+         self.graph = graph

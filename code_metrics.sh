@@ -124,9 +124,9 @@ function print-fbp-metrics() {
     fbp-cyclomatic-complexity $1 $2 average
     echo -e "\nCyclomatic Complexity p99"
     fbp-cyclomatic-complexity $1 $2 p99
-    echo -e "\Cognitive Complexity average"
+    echo -e "\nCognitive Complexity average"
     fbp-cognitive-complexity $1 $2 average
-    echo -e "\Cognitive Complexity p99"
+    echo -e "\nCognitive Complexity p99"
     fbp-cognitive-complexity $1 $2 p99
     echo -e "\nCohesion Average"
     fbp-cohesion $1 $2 average
@@ -218,7 +218,7 @@ function print-soa-metrics() {
 
 if [ -z "$1" ]
 then
-    for application in insurance_claims mblogger ride_allocation
+    for application in insurance_claims mblogger ride_allocation playlist_builder
     do
         # filename not provided, print metrics to the screen
         print-fbp-metrics $application fbp_app_min
@@ -241,7 +241,7 @@ else
     # filename provided, write metrics to this file
     echo -n "" > $1
     write-csv-header $1
-    for application in insurance_claims mblogger ride_allocation
+    for application in insurance_claims mblogger ride_allocation playlist_builder
     do
         write-metrics-to-csv $application fbp_app_min $1
         write-metrics-to-csv $application fbp_app_data $1

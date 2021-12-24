@@ -1,0 +1,126 @@
+diff --git a/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc b/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc
+deleted file mode 100755
+index 63fb3f5..0000000
+Binary files a/soa_app_data/__pycache__/soa_app_data.cpython-38.pyc and /dev/null differ
+diff --git a/soa_app_ml/__pycache__/soa_app_ml.cpython-38.pyc b/soa_app_ml/__pycache__/soa_app_ml.cpython-38.pyc
+new file mode 100755
+index 0000000..9139394
+Binary files /dev/null and b/soa_app_ml/__pycache__/soa_app_ml.cpython-38.pyc differ
+diff --git a/soa_app_data/flaskr/README.md b/soa_app_ml/flaskr/README.md
+index 096c479..4b45dd6 100755
+--- a/soa_app_data/flaskr/README.md
++++ b/soa_app_ml/flaskr/README.md
+@@ -5,9 +5,9 @@
+ # Running the application
+ 1. Requirements must be installed in the environment - pip3 install -r requirements.txt
+ 2. Following this tutorial - https://flask.palletsprojects.com/en/1.1.x/tutorial/factory/
+-Run next commands in console in the project path fbp-vs-soa/playlist_builder/soa_app_data/
++Run next commands in console in the project path fbp-vs-soa/playlist_builder/soa_app_ml/
+     * $ export FLASK_APP=flaskr
+     * $ export FLASK_ENV=development
+     * $ flask init-db
+     * $ flask run
+-3. Run the main file of the fbp-vs-soa/playlist_builder project passing "soa_app_data" as a parameter
++3. Run the main file of the fbp-vs-soa/playlist_builder project passing "soa_app_ml" as a parameter
+diff --git a/soa_app_data/flaskr/__pycache__/__init__.cpython-38.pyc b/soa_app_ml/flaskr/__pycache__/__init__.cpython-38.pyc
+index 243714b..501c257 100755
+Binary files a/soa_app_data/flaskr/__pycache__/__init__.cpython-38.pyc and b/soa_app_ml/flaskr/__pycache__/__init__.cpython-38.pyc differ
+diff --git a/soa_app_data/flaskr/__pycache__/movie.cpython-38.pyc b/soa_app_ml/flaskr/__pycache__/movie.cpython-38.pyc
+index f5c77f9..7d6730c 100755
+Binary files a/soa_app_data/flaskr/__pycache__/movie.cpython-38.pyc and b/soa_app_ml/flaskr/__pycache__/movie.cpython-38.pyc differ
+diff --git a/soa_app_data/flaskr/__pycache__/playlist.cpython-38.pyc b/soa_app_ml/flaskr/__pycache__/playlist.cpython-38.pyc
+index fefb252..b3a434e 100755
+Binary files a/soa_app_data/flaskr/__pycache__/playlist.cpython-38.pyc and b/soa_app_ml/flaskr/__pycache__/playlist.cpython-38.pyc differ
+diff --git a/soa_app_data/flaskr/data/__pycache__/db.cpython-38.pyc b/soa_app_ml/flaskr/data/__pycache__/db.cpython-38.pyc
+index 47c1528..dd6d400 100755
+Binary files a/soa_app_data/flaskr/data/__pycache__/db.cpython-38.pyc and b/soa_app_ml/flaskr/data/__pycache__/db.cpython-38.pyc differ
+diff --git a/soa_app_data/flaskr/data/__pycache__/movie.cpython-38.pyc b/soa_app_ml/flaskr/data/__pycache__/movie.cpython-38.pyc
+index 8b0014f..819b7ea 100755
+Binary files a/soa_app_data/flaskr/data/__pycache__/movie.cpython-38.pyc and b/soa_app_ml/flaskr/data/__pycache__/movie.cpython-38.pyc differ
+diff --git a/soa_app_data/flaskr/data/__pycache__/playlist.cpython-38.pyc b/soa_app_ml/flaskr/data/__pycache__/playlist.cpython-38.pyc
+index 4b7bb03..e4a742c 100755
+Binary files a/soa_app_data/flaskr/data/__pycache__/playlist.cpython-38.pyc and b/soa_app_ml/flaskr/data/__pycache__/playlist.cpython-38.pyc differ
+diff --git a/soa_app_data/flaskr/data/movie.py b/soa_app_ml/flaskr/data/movie.py
+index 3423be1..2564ad7 100755
+--- a/soa_app_data/flaskr/data/movie.py
++++ b/soa_app_ml/flaskr/data/movie.py
+@@ -13,6 +13,24 @@ def create_movie(movie):
+     return cursor.lastrowid
+ 
+ 
++# Load a movie
++def load_by_id(movie_id):
++    db = get_db()
++
++    sql = 'SELECT * FROM Movies WHERE movie_id = ?'
++    values = [movie_id]
++
++    cursor = db.execute(sql, values)
++    movie = next(cursor)
++    return {
++        "movie_id": movie["movie_id"],
++        "title": movie["title"],
++        "title_year": movie["title_year"],
++        "genres": movie["genres"],
++        "gross": movie["gross"]
++    }
++
++
+ # filter movies by genre
+ def filter_movies(genre):
+     db = get_db()
+@@ -79,3 +97,16 @@ def save_genre_stats(genre_stats):
+         affected += 1
+ 
+     return affected
++
++def load_genre_stats(genre):
++    db = get_db()
++
++    sql = "SELECT genre, quantile FROM GenreStats WHERE genre = ? ORDER BY quantile"
++    values = [genre]
++
++    cursor = db.execute(sql, values)
++    quantiles = []
++    for row in cursor:
++        quantiles.append(float(row["quantile"]))
++    
++    return {"genre": genre, "quantiles": quantiles}
+diff --git a/soa_app_data/flaskr/playlist.py b/soa_app_ml/flaskr/playlist.py
+index e304701..84ffebd 100755
+--- a/soa_app_data/flaskr/playlist.py
++++ b/soa_app_ml/flaskr/playlist.py
+@@ -3,7 +3,7 @@ from random import shuffle
+ 
+ from flask import (Blueprint, request, make_response, jsonify)
+ import requests
+-from .data import playlist
++from .data import playlist, movie
+ 
+ bp = Blueprint('playlist', __name__, url_prefix='/playlist')
+ 
+@@ -36,7 +36,16 @@ def build_playlist():
+     count = int(req["count"])
+ 
+     shuffle(movie_ids)
+-    playlist_movies = [bonus_movie_id] + movie_ids
++
++    playlist_movies = [bonus_movie_id]
++    for id in movie_ids:
++        m = movie.load_by_id(id)
++        genres = m["genres"].split("|")
++        movie_genre_stats = [movie.load_genre_stats(g) for g in genres]
++        # if movie is in top quantile for all of its genres, include it
++        if all(float(m["gross"]) >= gs["quantiles"][-1] for gs in movie_genre_stats):
++            playlist_movies.append(id)
++
+     playlist_movies = playlist_movies[:count]
+ 
+     res = make_response(jsonify(playlist_movies), 200)
+diff --git a/soa_app_data/instance/flaskr.sqlite b/soa_app_ml/instance/flaskr.sqlite
+index f5e766f..b8803db 100755
+Binary files a/soa_app_data/instance/flaskr.sqlite and b/soa_app_ml/instance/flaskr.sqlite differ
+diff --git a/soa_app_data/soa_app_data.py b/soa_app_ml/soa_app_ml.py
+similarity index 100%
+rename from soa_app_data/soa_app_data.py
+rename to soa_app_ml/soa_app_ml.py
