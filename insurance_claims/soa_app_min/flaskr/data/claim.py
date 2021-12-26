@@ -1,21 +1,6 @@
 from .db import get_db
 from datetime import datetime
 
-# let's invent some kind of overhead that goes into processing the claim
-CLAIM_VALUE_PROCESSING_OVERHEAD_RATE = 0.05
-
-# threshold to decide if claim is high or low value
-HIGH_VALUE_CLAIM_THRESHOLD = 60000
-
-# claims below this value are considered simple
-SIMPLE_CLAIM_VALUE_THRESHOLD = 5000
-
-# in reality sometimes the claims will be paid in full, and sometimes partially or not at all
-# to average this out let's just always pay out a certain partial amount
-# we assume simple claims will be paid out more often
-SIMPLE_CLAIMS_PAYOUT_RATE = 0.8
-COMPLEX_CLAIMS_PAYOUT_RATE = 0.6
-
 # Create a new claim
 def create_claim(claim):
     db = get_db()
@@ -37,59 +22,30 @@ def create_claim(claim):
 
 
 # Calculate claims value
-def calculate_claims_value():
+def get_claims_amount():
     res = []
     db = get_db()
     sql = 'SELECT claim_id, total_claim_amount FROM Claims WHERE state = 0'
     cursor = db.execute(sql)
     for claim in cursor:
-        value = (1.0+CLAIM_VALUE_PROCESSING_OVERHEAD_RATE) * claim['total_claim_amount']
-        claim_values = {'claim_id': claim['claim_id'], 'value': value}
+        claim_values = {'claim_id': claim['claim_id'], 'value': claim['total_claim_amount']}
         res.append(claim_values)
     return res
 
-
-# Classify claims by value
-def classify_claims_value(claims):
-    high_value_claims = []
-    low_value_claims = []
-    for claim in claims:
-        if claim['value'] >= HIGH_VALUE_CLAIM_THRESHOLD:
-            high_value_claims.append(claim)
-        else:
-            low_value_claims.append(claim)
-
-    return {'high_value_claims': high_value_claims, 'low_value_claims': low_value_claims}
-
-
-# Classify claims by complexity
-def classify_claims_complexity(claims):
+def get_claim_classification_data(claim_id):
     db = get_db()
-    simple_claims = []
-    complex_claims = []
-    low_value_claims = claims['low_value_claims']
-    high_value_claims = claims['high_value_claims']
-    for low_value_claim in low_value_claims:
-        sql = 'SELECT claim_id, total_claim_amount, auto_year, witnesses, police_report_available FROM Claims ' \
+    sql = 'SELECT claim_id, total_claim_amount, auto_year, witnesses, police_report_available FROM Claims ' \
               'WHERE claim_id = ?'
-        values = [low_value_claim['claim_id']]
-        cursor = db.execute(sql,values)
-        for claim in cursor:
-            c = {'claim_id':claim['claim_id'], 'total_claim_amount': claim['total_claim_amount']}
-            if is_claim_complex(claim):
-                complex_claims.append(c)
-            else:
-                simple_claims.append(c)
+    values = [claim_id]
+    cursor = db.execute(sql, values)
+    record = next(cursor)
 
-    for high_value_claim in high_value_claims:
-        sql = 'SELECT claim_id, total_claim_amount, auto_year, witnesses FROM Claims WHERE claim_id = ?'
-        values = [high_value_claim['claim_id']]
-        cursor = db.execute(sql, values)
-        for claim in cursor:
-            c = {'claim_id': claim['claim_id'], 'total_claim_amount': claim['total_claim_amount']}
-            complex_claims.append(c)
-    return {'simple_claims': simple_claims, 'complex_claims': complex_claims}
-
+    return {"claim_id": record["claim_id"],
+            "total_claim_amount": record["total_claim_amount"],
+            "auto_year": record["auto_year"],
+            "witnesses": record["witnesses"],
+            "police_report_available": record["police_report_available"]
+            }
 
 # Update claims by complexity
 def update_claims_complexity(claims):
@@ -107,43 +63,10 @@ def update_claims_complexity(claims):
         db.execute(sql, values)
         db.commit()
 
-
-# just some almost random logic here
-def is_claim_complex(claim):
-    if claim["total_claim_amount"] <= SIMPLE_CLAIM_VALUE_THRESHOLD:
-        # small claims are never complex
-        return False
-
-    if claim["auto_year"] < 2000:
-        # old cars yield complex cases
-        return True
-
-    if claim["witnesses"] == 0 and claim["police_report_available"] != "YES":
-        # no objective evidence of incident cause
-        return True
-
-    return False
-
-
-# Calculate claims payments
-def calculate_payments(claims):
+# Set claim state to 1
+def mark_claim_processed(claim_id):
     db = get_db()
-    res = []
-    simple_claims = claims['simple_claims']
-    complex_claims = claims['complex_claims']
-    for claim in simple_claims:
-        payout = SIMPLE_CLAIMS_PAYOUT_RATE * claim["total_claim_amount"]
-        r = {'claim_id': claim['claim_id'], 'payout': payout}
-        res.append(r)
-
-    for claim in complex_claims:
-        payout = COMPLEX_CLAIMS_PAYOUT_RATE * claim["total_claim_amount"]
-        r = {'claim_id': claim['claim_id'], 'payout': payout}
-        res.append(r)
-
-    for claim in res:
-        sql = 'UPDATE Claims SET state = 1 WHERE claim_id = ?'
-        values = [claim['claim_id']]
-        db.execute(sql, values)
-        db.commit()
-    return res
+    sql = 'UPDATE Claims SET state = 1 WHERE claim_id = ?'
+    values = [claim_id]
+    db.execute(sql, values)
+    db.commit()
