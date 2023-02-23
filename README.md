@@ -1,6 +1,6 @@
 # FBP vs SOA for ML
 
-This repo contains code for comparison flow-based programming (FBP) and software services (SOA) in the context of machine learning deployment. It accompanies the paper "An Empirical Evaluation of Flow Based Programming in the Machine Learning Deployment Context" presented at [CAIN 2022 conference](https://conf.researchr.org/track/cain-2022/cain-2022). Arxiv version of the paper is here: https://arxiv.org/abs/2204.12781.
+This repo contains code for comparison flow-based programming (FBP) and software services (SOA) in the context of machine learning deployment. It accompanies the paper "An Empirical Evaluation of Flow Based Programming in the Machine Learning Deployment Context" presented at [CAIN 2022 conference](https://conf.researchr.org/track/cain-2022/cain-2022). ArXiv version of the paper is here: https://arxiv.org/abs/2204.12781. Published versions are openly available in [ACM](https://dl.acm.org/doi/abs/10.1145/3522664.3528601) and [IEEE](https://ieeexplore.ieee.org/document/9796395) libraries.
 
 Earlier version of this repository accompanied paper "Towards better data discovery and collection with flow-based programming" presented at [Data-centric AI workshop](https://datacentricai.org/neurips21/) at NeurIPS 2021. The paper is also available on [ArXiv](https://arxiv.org/abs/2108.04105) and its code now lives in a [separate branch](https://github.com/mlatcl/fbp-vs-soa/tree/ride-allocation).
 
